@@ -12,6 +12,7 @@ wheels/
 # WIDER FACE
 data/
 *.zip
+*.jpg
 
 # cached images
 cache/

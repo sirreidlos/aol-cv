@@ -124,7 +124,9 @@ class ACFDetector:
         correct = 0
         total = 0
 
-        pbar = tqdm(dataloader, desc=f"[TRAIN] Epoch {epoch + 1}/{self.epochs}", ncols=100)
+        pbar = tqdm(
+            dataloader, desc=f"[TRAIN] Epoch {epoch + 1}/{self.epochs}", ncols=100
+        )
         for batch_X, batch_y in pbar:
             outputs = self.classifier(batch_X)
             loss = criterion(outputs, batch_y)
@@ -289,7 +291,7 @@ class ACFDetector:
                         image = load_image(img_path, val_image_base_dir)
                         gt_boxes = val_annotations[img_path]
 
-                        pos_samples, neg_samples = extract_training_samples(
+                        pos_samples, neg_samples = extract_training_samples_sliding(
                             image, gt_boxes, window_sizes=[self.window_size]
                         )
 
