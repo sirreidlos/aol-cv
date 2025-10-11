@@ -19,6 +19,19 @@ unzip WIDER_test.zip -d data
 unzip wider_face_split.zip -d data
 ```
 
+Ensure that the folder structure looks like this:
+```
+    ┌── images            
+  ┌─┴ WIDER_val           
+  │ ┌── images            
+  ├─┴ WIDER_train         
+  │ ┌── images            
+  ├─┴ WIDER_test          
+  │ ┌── wider_face_train_bbx_gt.txt            
+  ├─┴ wider_face_split
+┌─┴ data                  
+```
+
 2. Run training
 
 Example:
