@@ -7,14 +7,15 @@ import torch.optim as optim
 from torch.utils.data import TensorDataset, DataLoader
 import os
 from typing import Tuple
+import cv2
 
-from .channels import aggregate_channels, compute_channels
+from .channels import aggregate_channels, compute_channel_pyramid, compute_channels
 from .preprocessing import (
     extract_training_samples_sliding,
     parse_wider_face_annotation,
     load_image,
-    extract_training_samples,
     resize_sample,
+    compute_iou,
 )
 
 
@@ -124,6 +125,9 @@ class ACFDetector:
         correct = 0
         total = 0
 
+        all_preds = []
+        all_labels = []
+
         pbar = tqdm(
             dataloader, desc=f"[TRAIN] Epoch {epoch + 1}/{self.epochs}", ncols=100
         )
@@ -133,6 +137,7 @@ class ACFDetector:
 
             optimizer.zero_grad()
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(self.classifier.parameters(), max_norm=1.0)
             optimizer.step()
 
             epoch_loss += loss.item()
@@ -147,12 +152,23 @@ class ACFDetector:
                 }
             )
 
+            all_preds.extend(predicted.cpu().numpy())
+            all_labels.extend(batch_y.cpu().numpy())
+
         epoch_acc = 100 * correct / total
         avg_loss = epoch_loss / len(dataloader)
         print(
             f"[TRAIN] Epoch {epoch + 1}/{self.epochs} - Loss: {avg_loss:.4f}, Accuracy: {epoch_acc:.2f}%",
             end="",
         )
+
+        all_preds = np.array(all_preds)
+        all_labels = np.array(all_labels)
+
+        pos_acc = (all_preds[all_labels == 1] == 1).mean() * 100
+        neg_acc = (all_preds[all_labels == 0] == 0).mean() * 100
+
+        print(f"\n  Pos accuracy: {pos_acc:.2f}%, Neg accuracy: {neg_acc:.2f}%")
 
         return avg_loss, epoch_acc
 
@@ -161,6 +177,9 @@ class ACFDetector:
         val_loss = 0.0
         val_correct = 0
         val_total = 0
+
+        all_preds = []
+        all_labels = []
 
         with torch.no_grad():
             pbar = tqdm(
@@ -181,9 +200,17 @@ class ACFDetector:
                     }
                 )
 
+                all_preds.extend(predicted.cpu().numpy())
+                all_labels.extend(batch_y.cpu().numpy())
+
         avg_val_loss = val_loss / len(val_dataloader)
         val_acc = 100 * val_correct / val_total
         print(f" - Val Loss: {avg_val_loss:.4f}, Val Accuracy: {val_acc:.2f}%")
+
+        pos_acc = (all_preds[all_labels == 1] == 1).mean() * 100
+        neg_acc = (all_preds[all_labels == 0] == 0).mean() * 100
+
+        print(f"\n  Pos accuracy: {pos_acc:.2f}%, Neg accuracy: {neg_acc:.2f}%")
 
         return avg_val_loss, val_acc
 
@@ -243,24 +270,82 @@ class ACFDetector:
 
             X_train = []
             y_train = []
+            training_scales = [0.5, 0.75, 1.0, 1.25, 1.5]
 
             for img_path in tqdm(image_paths, desc="Processing images"):
                 try:
                     image = load_image(img_path, image_base_dir)
                     gt_boxes = annotations[img_path]
-                    pos_samples, neg_samples = extract_training_samples_sliding(
-                        image, gt_boxes, window_sizes=[self.window_size]
-                    )
+                    pyramid = compute_channel_pyramid(image, training_scales)
 
-                    for roi in pos_samples:
-                        features = self.extract_features(image, roi)
-                        X_train.append(features)
-                        y_train.append(1)
+                    pos_count = 0
+                    neg_count = 0
+                    pos_samples_needed = len(gt_boxes) * 3
 
-                    for roi in neg_samples:
-                        features = self.extract_features(image, roi)
-                        X_train.append(features)
-                        y_train.append(0)
+                    for scaled_img, _, scale in pyramid:
+                        h, w = scaled_img.shape[:2]
+                        win_w, win_h = self.window_size
+
+                        if h < win_h or w < win_w:
+                            continue
+
+                        pos_samples, neg_samples = extract_training_samples_sliding(
+                            scaled_img, gt_boxes, scale=scale
+                        )
+
+                        for pos_sample in pos_samples:
+                            if pos_count < 5:
+                                os.makedirs("debug_pos_samples", exist_ok=True)
+
+                                x, y, w, h = pos_sample
+                                patch = scaled_img[y : y + h, x : x + w]
+
+                                orig_x, orig_y = int(x / scale), int(y / scale)
+                                orig_w, orig_h = int(w / scale), int(h / scale)
+                                orig_win = (orig_x, orig_y, orig_w, orig_h)
+
+                                best_iou = max(
+                                    compute_iou(orig_win, gt_box) for gt_box in gt_boxes
+                                )
+
+                                cv2.imwrite(
+                                    f"debug_pos_samples/pos_{len(X_train)}_iou{best_iou:.2f}.jpg",
+                                    cv2.cvtColor(patch, cv2.COLOR_RGB2BGR),
+                                )
+                            if pos_count >= pos_samples_needed:
+                                break
+
+                            features = self.extract_features(scaled_img, pos_sample)
+                            X_train.append(features)
+                            y_train.append(1)
+                            pos_count += 1
+
+                        for neg_sample in neg_samples:
+                            if neg_count < 5:
+                                os.makedirs("debug_neg_samples", exist_ok=True)
+
+                                x, y, w, h = neg_sample
+                                patch = scaled_img[y : y + h, x : x + w]
+
+                                orig_x, orig_y = int(x / scale), int(y / scale)
+                                orig_w, orig_h = int(w / scale), int(h / scale)
+                                orig_win = (orig_x, orig_y, orig_w, orig_h)
+
+                                best_iou = max(
+                                    compute_iou(orig_win, gt_box) for gt_box in gt_boxes
+                                )
+
+                                cv2.imwrite(
+                                    f"debug_neg_samples/neg_{len(X_train)}_iou{best_iou:.2f}.jpg",
+                                    cv2.cvtColor(patch, cv2.COLOR_RGB2BGR),
+                                )
+                            if neg_count >= pos_count * 3:
+                                break
+
+                            features = self.extract_features(scaled_img, neg_sample)
+                            X_train.append(features)
+                            y_train.append(0)
+                            neg_count += 1
 
                 except Exception as e:
                     print(f"Error processing {img_path}: {e}")
@@ -276,6 +361,7 @@ class ACFDetector:
             X_val, y_val = None, None
             if val_annotation_file and val_image_base_dir:
                 print("\nLoading validation data...")
+                val_annotations = parse_wider_face_annotation(val_annotation_file)
 
                 print(
                     f"Extracting features from {len(val_image_paths)} validation images..."
@@ -290,20 +376,40 @@ class ACFDetector:
                     try:
                         image = load_image(img_path, val_image_base_dir)
                         gt_boxes = val_annotations[img_path]
+                        pyramid = compute_channel_pyramid(image, training_scales)
 
-                        pos_samples, neg_samples = extract_training_samples_sliding(
-                            image, gt_boxes, window_sizes=[self.window_size]
-                        )
+                        pos_count = 0
+                        neg_count = 0
+                        pos_samples_needed = len(gt_boxes) * 3
 
-                        for roi in pos_samples:
-                            features = self.extract_features(image, roi)
-                            X_val_list.append(features)
-                            y_val_list.append(1)
+                        for scaled_img, _, scale in pyramid:
+                            h, w = scaled_img.shape[:2]
+                            win_w, win_h = self.window_size
 
-                        for roi in neg_samples:
-                            features = self.extract_features(image, roi)
-                            X_val_list.append(features)
-                            y_val_list.append(0)
+                            if h < win_h or w < win_w:
+                                continue
+
+                            pos_samples, neg_samples = extract_training_samples_sliding(
+                                scaled_img, gt_boxes, scale=scale
+                            )
+
+                            for pos_sample in pos_samples:
+                                if pos_count >= pos_samples_needed:
+                                    break
+
+                                features = self.extract_features(scaled_img, pos_sample)
+                                X_val_list.append(features)
+                                y_val_list.append(1)
+                                pos_count += 1
+
+                            for neg_sample in neg_samples:
+                                if neg_count >= pos_count * 3:
+                                    break
+
+                                features = self.extract_features(scaled_img, neg_sample)
+                                X_val_list.append(features)
+                                y_val_list.append(0)
+                                neg_count += 1
 
                     except Exception as e:
                         print(f"Error processing validation image {img_path}: {e}")
@@ -322,12 +428,26 @@ class ACFDetector:
 
     def train(
         self,
-        X_train,
-        y_train,
-        X_val,
-        y_val,
+        X_train: np.ndarray,
+        y_train: np.ndarray,
+        X_val: np.ndarray,
+        y_val: np.ndarray,
         early_stopping_patience=5,
     ):
+        print(f"Feature range: [{X_train.min()}, {X_train.max()}]")
+        print(f"Feature mean: {X_train.mean()}, std: {X_train.std()}")
+        print(f"Any NaN: {np.isnan(X_train).any()}")
+        print(f"Any Inf: {np.isinf(X_train).any()}")
+
+        mean = X_train.mean(axis=0, keepdims=True)
+        std = X_train.std(axis=0, keepdims=True) + 1e-8
+
+        self.mean = mean
+        self.std = std
+
+        X_train = (X_train - mean) / std
+        print(f"Feature range, normalized: [{X_train.min()}, {X_train.max()}]")
+
         X_tensor = torch.from_numpy(X_train).to(self.device)
         y_tensor = torch.from_numpy(y_train).to(self.device)
 
@@ -336,6 +456,7 @@ class ACFDetector:
 
         val_dataloader = None
         if X_val is not None:
+            X_val = (X_val - mean) / std
             X_val_tensor = torch.from_numpy(X_val).to(self.device)
             y_val_tensor = torch.from_numpy(y_val).to(self.device)
             val_dataset = TensorDataset(X_val_tensor, y_val_tensor)
@@ -355,25 +476,26 @@ class ACFDetector:
                 dataloader, epoch, optimizer, criterion
             )
 
-            if val_dataloader is not None:
-                avg_val_loss, val_acc = self.val_step(val_dataloader, criterion, epoch)
-
-                if avg_val_loss < best_val_loss:
-                    best_val_loss = avg_val_loss
-                    best_model_state = self.classifier.state_dict().copy()
-                    patience_counter = 0
-                    print(f"  → New best validation loss: {best_val_loss:.4f}")
-                else:
-                    patience_counter += 1
-                    print(f"  → No improvement for {patience_counter} epoch(s)")
-
-                    if patience_counter >= early_stopping_patience:
-                        print(f"\nEarly stopping triggered after {epoch + 1} epochs!")
-                        print(f"Restoring best model (val_loss={best_val_loss:.4f})")
-                        self.classifier.load_state_dict(best_model_state)
-                        break
-            else:
+            if val_dataloader is None:
                 print()
+                continue
+
+            avg_val_loss, val_acc = self.val_step(val_dataloader, criterion, epoch)
+
+            if avg_val_loss < best_val_loss:
+                best_val_loss = avg_val_loss
+                best_model_state = self.classifier.state_dict().copy()
+                patience_counter = 0
+                print(f"  → New best validation loss: {best_val_loss:.4f}")
+            else:
+                patience_counter += 1
+                print(f"  → No improvement for {patience_counter} epoch(s)")
+
+                if patience_counter >= early_stopping_patience:
+                    print(f"\nEarly stopping triggered after {epoch + 1} epochs!")
+                    print(f"Restoring best model (val_loss={best_val_loss:.4f})")
+                    self.classifier.load_state_dict(best_model_state)
+                    break
 
         self.trained = True
         print("Training complete!")
@@ -395,6 +517,8 @@ class ACFDetector:
             "batch_size": self.batch_size,
             "epochs": self.epochs,
             "trained": self.trained,
+            "std": self.std,
+            "mean": self.mean,
         }
 
         with open(filepath, "wb") as f:
@@ -413,6 +537,8 @@ class ACFDetector:
         self.batch_size = model_data.get("batch_size")
         self.epochs = model_data.get("epochs")
         self.trained = model_data["trained"]
+        self.mean = model_data["mean"]
+        self.std = model_data["std"]
 
         input_size = 10 * self.feature_resolution * self.feature_resolution
         self.classifier = MLPClassifier(

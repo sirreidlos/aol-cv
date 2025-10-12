@@ -6,7 +6,7 @@ import torch
 
 from acf.model import ACFDetector
 from .channels import compute_channel_pyramid
-from .preprocessing import generate_sliding_windows
+from .preprocessing import compute_iou, generate_sliding_windows
 
 
 def non_max_suppression(
@@ -116,11 +116,14 @@ def detect_multiscale(
             if len(batch_features) == 0:
                 continue
 
+            features_numpy = np.array(batch_features)
+            features_numpy_normalized = (features_numpy - detector.mean) / detector.std
             features_tensor = (
-                torch.from_numpy(np.array(batch_features)).float().to(detector.device)
+                torch.from_numpy(features_numpy_normalized).float().to(detector.device)
             )
 
             outputs = detector.classifier(features_tensor)
+
             probs = torch.softmax(outputs, dim=1)
             scores = probs[:, 1].cpu().numpy()
 
@@ -181,8 +184,8 @@ def evaluate_detections(
             "recall": 0,
             "f1": 0,
             "true_positives": 0,
-            "false_positives": 0,
-            "false_negatives": len(ground_truth),
+            "false_positives": len(detections),
+            "false_negatives": 0,
         }
 
     if len(detections) == 0:
@@ -191,8 +194,8 @@ def evaluate_detections(
             "recall": 0,
             "f1": 0,
             "true_positives": 0,
-            "false_positives": len(detections),
-            "false_negatives": 0,
+            "false_positives": 0,
+            "false_negatives": len(ground_truth),
         }
 
     matched_gt = set()
@@ -207,7 +210,7 @@ def evaluate_detections(
             if gt_idx in matched_gt:
                 continue
 
-            iou = compute_iou_boxes(det_box, gt_box)
+            iou = compute_iou(det_box, gt_box)
 
             if iou > best_iou:
                 best_iou = iou
@@ -232,26 +235,3 @@ def evaluate_detections(
         "false_positives": false_positives,
         "false_negatives": false_negatives,
     }
-
-
-def compute_iou_boxes(
-    box1: Tuple[int, int, int, int], box2: Tuple[int, int, int, int]
-) -> float:
-    x1, y1, w1, h1 = box1[:4]
-    x2, y2, w2, h2 = box2[:4]
-
-    x_left = max(x1, x2)
-    y_top = max(y1, y2)
-    x_right = min(x1 + w1, x2 + w2)
-    y_bottom = min(y1 + h1, y2 + h2)
-
-    if x_right < x_left or y_bottom < y_top:
-        return 0.0
-
-    intersection = (x_right - x_left) * (y_bottom - y_top)
-
-    area1 = w1 * h1
-    area2 = w2 * h2
-    union = area1 + area2 - intersection
-
-    return intersection / (union + 1e-6)

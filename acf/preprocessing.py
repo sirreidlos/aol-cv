@@ -88,8 +88,10 @@ def extract_training_samples_sliding(
     annotations: np.ndarray,
     pos_iou_thresh=0.5,
     neg_iou_thresh=0.3,
+    hard_neg_iou_range=(0.2, 0.3),
     num_neg_per_pos=3,
     window_sizes: List[Tuple[int, int]] = [(64, 64)],
+    scale=1.0,
 ) -> Tuple[List[Tuple[int, int, int, int]], List[Tuple[int, int, int, int]]]:
     assert annotations.ndim == 2, f"Expected 2D annotations, got {annotations.ndim}D"
     assert annotations.shape[1] == 4, f"Expected shape [N, 4], got {annotations.shape}"
@@ -97,6 +99,7 @@ def extract_training_samples_sliding(
 
     pos_samples = []
     neg_samples = []
+    hard_neg_samples = []
 
     for win_size in window_sizes:
         stride = min(win_size) // 4
@@ -104,19 +107,31 @@ def extract_training_samples_sliding(
         np.random.shuffle(windows)
 
         for win in windows:
+            x, y, win_w, win_h = win
+
+            orig_x, orig_y = int(x / scale), int(y / scale)
+            orig_w, orig_h = int(win_w / scale), int(win_h / scale)
+
+            orig_win = (orig_x, orig_y, orig_w, orig_h)
+
             max_iou = 0
             for gt_box in annotations:
-                max_iou = max(max_iou, compute_iou(win, gt_box))
+                max_iou = max(max_iou, compute_iou(orig_win, gt_box))
 
             if max_iou >= pos_iou_thresh:
                 pos_samples.append(win)
+            elif hard_neg_iou_range[0] <= max_iou < hard_neg_iou_range[1]:
+                hard_neg_samples.append(win)
             elif max_iou < neg_iou_thresh:
                 neg_samples.append(win)
 
-    if len(neg_samples) > len(pos_samples) * num_neg_per_pos:
-        neg_samples = neg_samples[: len(pos_samples) * num_neg_per_pos]
+    num_neg_needed = len(pos_samples) * num_neg_per_pos
+    num_hard = min(len(hard_neg_samples), num_neg_needed // 2)
+    num_easy = min(len(neg_samples), num_neg_needed - num_hard)
 
-    return pos_samples, neg_samples
+    final_neg = hard_neg_samples[:num_hard] + neg_samples[:num_easy]
+
+    return pos_samples, final_neg
 
 
 def extract_training_samples(
