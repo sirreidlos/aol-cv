@@ -28,8 +28,9 @@ class MLPClassifier(nn.Module):
 
         for hidden_size in hidden_sizes:
             layers.append(nn.Linear(prev_size, hidden_size))
+            layers.append(nn.BatchNorm1d(hidden_size))
             layers.append(nn.ReLU())
-            layers.append(nn.Dropout(0.3))
+            layers.append(nn.Dropout(0.5))
             prev_size = hidden_size
 
         layers.append(nn.Linear(prev_size, num_classes))
@@ -122,15 +123,12 @@ class ACFDetector:
     def train_step(self, dataloader, epoch, optimizer, criterion):
         self.classifier.train()
         epoch_loss = 0.0
-        correct = 0
-        total = 0
 
         all_preds = []
         all_labels = []
+        all_probs = []
 
-        pbar = tqdm(
-            dataloader, desc=f"[TRAIN] Epoch {epoch + 1}/{self.epochs}", ncols=100
-        )
+        pbar = tqdm(dataloader, desc=f"T ┬ Epoch {epoch + 1}/{self.epochs}", ncols=100)
         for batch_X, batch_y in pbar:
             outputs = self.classifier(batch_X)
             loss = criterion(outputs, batch_y)
@@ -141,78 +139,103 @@ class ACFDetector:
             optimizer.step()
 
             epoch_loss += loss.item()
-            _, predicted = torch.max(outputs.data, 1)
-            total += batch_y.size(0)
-            correct += (predicted == batch_y).sum().item()
 
-            pbar.set_postfix(
-                {
-                    "loss": f"{loss.item():.4f}",
-                    "acc": f"{100 * correct / total:.2f}%",
-                }
-            )
+            probs = torch.softmax(outputs, dim=1)
+            all_probs.extend(probs[:, 1].detach().cpu().numpy())
+
+            _, predicted = torch.max(outputs.data, 1)
 
             all_preds.extend(predicted.cpu().numpy())
             all_labels.extend(batch_y.cpu().numpy())
 
-        epoch_acc = 100 * correct / total
-        avg_loss = epoch_loss / len(dataloader)
-        print(
-            f"[TRAIN] Epoch {epoch + 1}/{self.epochs} - Loss: {avg_loss:.4f}, Accuracy: {epoch_acc:.2f}%",
-            end="",
-        )
-
         all_preds = np.array(all_preds)
         all_labels = np.array(all_labels)
+        all_probs = np.array(all_probs)
+
+        avg_loss = epoch_loss / len(dataloader)
+        epoch_acc = 100 * (all_preds == all_labels).mean()
+
+        true_positives = ((all_preds == 1) & (all_labels == 1)).sum()
+        false_positives = ((all_preds == 1) & (all_labels == 0)).sum()
+        false_negatives = ((all_preds == 0) & (all_labels == 1)).sum()
+
+        precision = true_positives / (true_positives + false_positives + 1e-6)
+        recall = true_positives / (true_positives + false_negatives + 1e-6)
+        f1 = 2 * precision * recall / (precision + recall + 1e-6)
+
+        beta = 0.5
+        f_beta = (
+            (1 + beta**2) * precision * recall / (beta**2 * precision + recall + 1e-6)
+        )
 
         pos_acc = (all_preds[all_labels == 1] == 1).mean() * 100
         neg_acc = (all_preds[all_labels == 0] == 0).mean() * 100
 
-        print(f"\n  Pos accuracy: {pos_acc:.2f}%, Neg accuracy: {neg_acc:.2f}%")
+        print(f"  ├ Train Loss: {avg_loss:.4f}, Train Accuracy: {epoch_acc:.2f}%")
+        print(
+            f"  ├ Precision: {precision:.4f}, Recall: {recall:.4f}, F1: {f1:.4f}, F-beta: {f_beta:.4f}"
+        )
+        print(f"  └ Pos accuracy: {pos_acc:.2f}%, Neg accuracy: {neg_acc:.2f}%")
 
         return avg_loss, epoch_acc
 
     def val_step(self, val_dataloader, criterion, epoch):
         self.classifier.eval()
         val_loss = 0.0
-        val_correct = 0
-        val_total = 0
 
         all_preds = []
         all_labels = []
+        all_probs = []
 
         with torch.no_grad():
             pbar = tqdm(
-                val_dataloader, desc=f"[VAL] Epoch {epoch + 1}/{self.epochs}", ncols=100
+                val_dataloader,
+                desc=f"V ┬ Epoch {epoch + 1}/{self.epochs}",
+                ncols=100,
             )
             for batch_X, batch_y in pbar:
                 outputs = self.classifier(batch_X)
                 loss = criterion(outputs, batch_y)
                 val_loss += loss.item()
-                _, predicted = torch.max(outputs.data, 1)
-                val_total += batch_y.size(0)
-                val_correct += (predicted == batch_y).sum().item()
 
-                pbar.set_postfix(
-                    {
-                        "loss": f"{loss.item():.4f}",
-                        "acc": f"{100 * val_correct / val_total:.2f}%",
-                    }
-                )
+                probs = torch.softmax(outputs, dim=1)
+                all_probs.extend(probs[:, 1].cpu().numpy())
+
+                _, predicted = torch.max(outputs.data, 1)
 
                 all_preds.extend(predicted.cpu().numpy())
                 all_labels.extend(batch_y.cpu().numpy())
 
+        all_preds = np.array(all_preds)
+        all_labels = np.array(all_labels)
+        all_probs = np.array(all_probs)
+
         avg_val_loss = val_loss / len(val_dataloader)
-        val_acc = 100 * val_correct / val_total
-        print(f" - Val Loss: {avg_val_loss:.4f}, Val Accuracy: {val_acc:.2f}%")
+        val_acc = 100 * (all_preds == all_labels).mean()
+
+        true_positives = ((all_preds == 1) & (all_labels == 1)).sum()
+        false_positives = ((all_preds == 1) & (all_labels == 0)).sum()
+        false_negatives = ((all_preds == 0) & (all_labels == 1)).sum()
+
+        precision = true_positives / (true_positives + false_positives + 1e-6)
+        recall = true_positives / (true_positives + false_negatives + 1e-6)
+        f1 = 2 * precision * recall / (precision + recall + 1e-6)
+
+        beta = 0.5
+        f_beta = (
+            (1 + beta**2) * precision * recall / (beta**2 * precision + recall + 1e-6)
+        )
 
         pos_acc = (all_preds[all_labels == 1] == 1).mean() * 100
         neg_acc = (all_preds[all_labels == 0] == 0).mean() * 100
 
-        print(f"\n  Pos accuracy: {pos_acc:.2f}%, Neg accuracy: {neg_acc:.2f}%")
+        print(f"  ├ Val Loss: {avg_val_loss:.4f}, Val Accuracy: {val_acc:.2f}%")
+        print(
+            f"  ├ Precision: {precision:.4f}, Recall: {recall:.4f}, F1: {f1:.4f}, F-beta: {f_beta:.4f}"
+        )
+        print(f"  └ Pos accuracy: {pos_acc:.2f}%, Neg accuracy: {neg_acc:.2f}%")
 
-        return avg_val_loss, val_acc
+        return avg_val_loss, val_acc, precision, recall, f1, f_beta
 
     def get_train_data(
         self,
@@ -264,166 +287,168 @@ class ACFDetector:
                 print(f"Loaded {len(X_val)} validation samples from cache")
                 print(f"Positive validation samples: {np.sum(y_val == 1)}")
                 print(f"Negative validation samples: {np.sum(y_val == 0)}")
-        else:
-            # no cache artifacts
-            print(f"Cache miss - extracting features from {len(image_paths)} images...")
 
-            X_train = []
-            y_train = []
-            training_scales = [0.5, 0.75, 1.0, 1.25, 1.5]
+            return X_train, y_train, X_val, y_val
 
-            for img_path in tqdm(image_paths, desc="Processing images"):
-                try:
-                    image = load_image(img_path, image_base_dir)
-                    gt_boxes = annotations[img_path]
-                    pyramid = compute_channel_pyramid(image, training_scales)
+        # no cache artifacts
+        print(f"Cache miss - extracting features from {len(image_paths)} images...")
 
-                    pos_count = 0
-                    neg_count = 0
-                    pos_samples_needed = len(gt_boxes) * 3
+        X_train = []
+        y_train = []
+        training_scales = [0.5, 0.75, 1.0, 1.25, 1.5]
 
-                    for scaled_img, _, scale in pyramid:
-                        h, w = scaled_img.shape[:2]
-                        win_w, win_h = self.window_size
+        for img_path in tqdm(image_paths, desc="Processing images", ncols=100):
+            try:
+                image = load_image(img_path, image_base_dir)
+                gt_boxes = annotations[img_path]
+                pyramid = compute_channel_pyramid(image, training_scales)
 
-                        if h < win_h or w < win_w:
-                            continue
+                pos_count = 0
+                neg_count = 0
+                pos_samples_needed = len(gt_boxes) * 3
 
-                        pos_samples, neg_samples = extract_training_samples_sliding(
-                            scaled_img, gt_boxes, scale=scale
-                        )
+                for scaled_img, _, scale in pyramid:
+                    h, w = scaled_img.shape[:2]
+                    win_w, win_h = self.window_size
 
-                        for pos_sample in pos_samples:
-                            if pos_count < 5:
-                                os.makedirs("debug_pos_samples", exist_ok=True)
-
-                                x, y, w, h = pos_sample
-                                patch = scaled_img[y : y + h, x : x + w]
-
-                                orig_x, orig_y = int(x / scale), int(y / scale)
-                                orig_w, orig_h = int(w / scale), int(h / scale)
-                                orig_win = (orig_x, orig_y, orig_w, orig_h)
-
-                                best_iou = max(
-                                    compute_iou(orig_win, gt_box) for gt_box in gt_boxes
-                                )
-
-                                cv2.imwrite(
-                                    f"debug_pos_samples/pos_{len(X_train)}_iou{best_iou:.2f}.jpg",
-                                    cv2.cvtColor(patch, cv2.COLOR_RGB2BGR),
-                                )
-                            if pos_count >= pos_samples_needed:
-                                break
-
-                            features = self.extract_features(scaled_img, pos_sample)
-                            X_train.append(features)
-                            y_train.append(1)
-                            pos_count += 1
-
-                        for neg_sample in neg_samples:
-                            if neg_count < 5:
-                                os.makedirs("debug_neg_samples", exist_ok=True)
-
-                                x, y, w, h = neg_sample
-                                patch = scaled_img[y : y + h, x : x + w]
-
-                                orig_x, orig_y = int(x / scale), int(y / scale)
-                                orig_w, orig_h = int(w / scale), int(h / scale)
-                                orig_win = (orig_x, orig_y, orig_w, orig_h)
-
-                                best_iou = max(
-                                    compute_iou(orig_win, gt_box) for gt_box in gt_boxes
-                                )
-
-                                cv2.imwrite(
-                                    f"debug_neg_samples/neg_{len(X_train)}_iou{best_iou:.2f}.jpg",
-                                    cv2.cvtColor(patch, cv2.COLOR_RGB2BGR),
-                                )
-                            if neg_count >= pos_count * 3:
-                                break
-
-                            features = self.extract_features(scaled_img, neg_sample)
-                            X_train.append(features)
-                            y_train.append(0)
-                            neg_count += 1
-
-                except Exception as e:
-                    print(f"Error processing {img_path}: {e}")
-                    continue
-
-            X_train = np.array(X_train, dtype=np.float32)
-            y_train = np.array(y_train, dtype=np.int64)
-
-            print(f"\nTraining classifier on {len(X_train)} samples...")
-            print(f"Positive samples: {np.sum(y_train == 1)}")
-            print(f"Negative samples: {np.sum(y_train == 0)}")
-
-            X_val, y_val = None, None
-            if val_annotation_file and val_image_base_dir:
-                print("\nLoading validation data...")
-                val_annotations = parse_wider_face_annotation(val_annotation_file)
-
-                print(
-                    f"Extracting features from {len(val_image_paths)} validation images..."
-                )
-
-                X_val_list = []
-                y_val_list = []
-
-                for img_path in tqdm(
-                    val_image_paths, desc="Processing validation images"
-                ):
-                    try:
-                        image = load_image(img_path, val_image_base_dir)
-                        gt_boxes = val_annotations[img_path]
-                        pyramid = compute_channel_pyramid(image, training_scales)
-
-                        pos_count = 0
-                        neg_count = 0
-                        pos_samples_needed = len(gt_boxes) * 3
-
-                        for scaled_img, _, scale in pyramid:
-                            h, w = scaled_img.shape[:2]
-                            win_w, win_h = self.window_size
-
-                            if h < win_h or w < win_w:
-                                continue
-
-                            pos_samples, neg_samples = extract_training_samples_sliding(
-                                scaled_img, gt_boxes, scale=scale
-                            )
-
-                            for pos_sample in pos_samples:
-                                if pos_count >= pos_samples_needed:
-                                    break
-
-                                features = self.extract_features(scaled_img, pos_sample)
-                                X_val_list.append(features)
-                                y_val_list.append(1)
-                                pos_count += 1
-
-                            for neg_sample in neg_samples:
-                                if neg_count >= pos_count * 3:
-                                    break
-
-                                features = self.extract_features(scaled_img, neg_sample)
-                                X_val_list.append(features)
-                                y_val_list.append(0)
-                                neg_count += 1
-
-                    except Exception as e:
-                        print(f"Error processing validation image {img_path}: {e}")
+                    if h < win_h or w < win_w:
                         continue
 
-                X_val = np.array(X_val_list, dtype=np.float32)
-                y_val = np.array(y_val_list, dtype=np.int64)
+                    pos_samples, neg_samples = extract_training_samples_sliding(
+                        scaled_img, gt_boxes, scale=scale
+                    )
 
-                print(f"Validation samples: {len(X_val)}")
-                print(f"Positive validation samples: {np.sum(y_val == 1)}")
-                print(f"Negative validation samples: {np.sum(y_val == 0)}")
+                    for pos_sample in pos_samples:
+                        # if pos_count < 5:
+                        #     os.makedirs("debug_pos_samples", exist_ok=True)
 
+                        #     x, y, w, h = pos_sample
+                        #     patch = scaled_img[y : y + h, x : x + w]
+
+                        #     orig_x, orig_y = int(x / scale), int(y / scale)
+                        #     orig_w, orig_h = int(w / scale), int(h / scale)
+                        #     orig_win = (orig_x, orig_y, orig_w, orig_h)
+
+                        #     best_iou = max(
+                        #         compute_iou(orig_win, gt_box) for gt_box in gt_boxes
+                        #     )
+
+                        #     cv2.imwrite(
+                        #         f"debug_pos_samples/pos_{len(X_train)}_iou{best_iou:.2f}.jpg",
+                        #         cv2.cvtColor(patch, cv2.COLOR_RGB2BGR),
+                        #     )
+                        if pos_count >= pos_samples_needed:
+                            break
+
+                        features = self.extract_features(scaled_img, pos_sample)
+                        X_train.append(features)
+                        y_train.append(1)
+                        pos_count += 1
+
+                    for neg_sample in neg_samples:
+                        # if neg_count < 5:
+                        #     os.makedirs("debug_neg_samples", exist_ok=True)
+
+                        #     x, y, w, h = neg_sample
+                        #     patch = scaled_img[y : y + h, x : x + w]
+
+                        #     orig_x, orig_y = int(x / scale), int(y / scale)
+                        #     orig_w, orig_h = int(w / scale), int(h / scale)
+                        #     orig_win = (orig_x, orig_y, orig_w, orig_h)
+
+                        #     best_iou = max(
+                        #         compute_iou(orig_win, gt_box) for gt_box in gt_boxes
+                        #     )
+
+                        #     cv2.imwrite(
+                        #         f"debug_neg_samples/neg_{len(X_train)}_iou{best_iou:.2f}.jpg",
+                        #         cv2.cvtColor(patch, cv2.COLOR_RGB2BGR),
+                        #     )
+                        if neg_count >= pos_count * 3:
+                            break
+
+                        features = self.extract_features(scaled_img, neg_sample)
+                        X_train.append(features)
+                        y_train.append(0)
+                        neg_count += 1
+
+            except Exception as e:
+                print(f"Error processing {img_path}: {e}")
+                continue
+
+        X_train = np.array(X_train, dtype=np.float32)
+        y_train = np.array(y_train, dtype=np.int64)
+
+        print(f"\nTraining classifier on {len(X_train)} samples...")
+        print(f"Positive samples: {np.sum(y_train == 1)}")
+        print(f"Negative samples: {np.sum(y_train == 0)}")
+
+        X_val, y_val = None, None
+        if not val_annotation_file or not val_image_base_dir:
             self._save_cache(cache_key, X_train, y_train, X_val, y_val)
+            return X_train, y_train, X_val, y_val
 
+        print("\nLoading validation data...")
+        val_annotations = parse_wider_face_annotation(val_annotation_file)
+
+        print(f"Extracting features from {len(val_image_paths)} validation images...")
+
+        X_val_list = []
+        y_val_list = []
+
+        for img_path in tqdm(
+            val_image_paths, desc="Processing validation images", ncols=100
+        ):
+            try:
+                image = load_image(img_path, val_image_base_dir)
+                gt_boxes = val_annotations[img_path]
+                pyramid = compute_channel_pyramid(image, training_scales)
+
+                pos_count = 0
+                neg_count = 0
+                pos_samples_needed = len(gt_boxes) * 3
+
+                for scaled_img, _, scale in pyramid:
+                    h, w = scaled_img.shape[:2]
+                    win_w, win_h = self.window_size
+
+                    if h < win_h or w < win_w:
+                        continue
+
+                    pos_samples, neg_samples = extract_training_samples_sliding(
+                        scaled_img, gt_boxes, scale=scale
+                    )
+
+                    for pos_sample in pos_samples:
+                        if pos_count >= pos_samples_needed:
+                            break
+
+                        features = self.extract_features(scaled_img, pos_sample)
+                        X_val_list.append(features)
+                        y_val_list.append(1)
+                        pos_count += 1
+
+                    for neg_sample in neg_samples:
+                        if neg_count >= pos_count * 3:
+                            break
+
+                        features = self.extract_features(scaled_img, neg_sample)
+                        X_val_list.append(features)
+                        y_val_list.append(0)
+                        neg_count += 1
+
+            except Exception as e:
+                print(f"Error processing validation image {img_path}: {e}")
+                continue
+
+        X_val = np.array(X_val_list, dtype=np.float32)
+        y_val = np.array(y_val_list, dtype=np.int64)
+
+        print(f"Validation samples: {len(X_val)}")
+        print(f"Positive validation samples: {np.sum(y_val == 1)}")
+        print(f"Negative validation samples: {np.sum(y_val == 0)}")
+
+        self._save_cache(cache_key, X_train, y_train, X_val, y_val)
         return X_train, y_train, X_val, y_val
 
     def train(
@@ -433,20 +458,29 @@ class ACFDetector:
         X_val: np.ndarray,
         y_val: np.ndarray,
         early_stopping_patience=5,
+        selection_metric="f_beta",  # or 'precision', 'f1', 'val_loss'
     ):
         print(f"Feature range: [{X_train.min()}, {X_train.max()}]")
         print(f"Feature mean: {X_train.mean()}, std: {X_train.std()}")
         print(f"Any NaN: {np.isnan(X_train).any()}")
         print(f"Any Inf: {np.isinf(X_train).any()}")
 
-        mean = X_train.mean(axis=0, keepdims=True)
-        std = X_train.std(axis=0, keepdims=True) + 1e-8
+        X_train_reshaped = X_train.reshape(
+            -1, self.feature_resolution, self.feature_resolution, 10
+        )
 
-        self.mean = mean
-        self.std = std
+        mean = X_train_reshaped.mean(axis=(0, 1, 2), keepdims=True)
+        std = X_train_reshaped.std(axis=(0, 1, 2), keepdims=True) + 1e-8
 
-        X_train = (X_train - mean) / std
-        print(f"Feature range, normalized: [{X_train.min()}, {X_train.max()}]")
+        self.mean = mean.astype(np.float32)
+        self.std = std.astype(np.float32)
+
+        X_train_standardized = (X_train_reshaped - mean) / std
+        X_train = X_train_standardized.reshape(
+            -1, self.feature_resolution * self.feature_resolution * 10
+        )
+
+        print(f"Feature range, standardized: [{X_train.min()}, {X_train.max()}]")
 
         X_tensor = torch.from_numpy(X_train).to(self.device)
         y_tensor = torch.from_numpy(y_train).to(self.device)
@@ -456,7 +490,14 @@ class ACFDetector:
 
         val_dataloader = None
         if X_val is not None:
-            X_val = (X_val - mean) / std
+            X_val_reshaped = X_val.reshape(
+                -1, self.feature_resolution, self.feature_resolution, 10
+            )
+            X_val_standardized = (X_val_reshaped - mean) / std
+            X_val = X_val_standardized.reshape(
+                -1, self.feature_resolution * self.feature_resolution * 10
+            )
+
             X_val_tensor = torch.from_numpy(X_val).to(self.device)
             y_val_tensor = torch.from_numpy(y_val).to(self.device)
             val_dataset = TensorDataset(X_val_tensor, y_val_tensor)
@@ -464,10 +505,16 @@ class ACFDetector:
                 val_dataset, batch_size=self.batch_size, shuffle=False
             )
 
-        criterion = nn.CrossEntropyLoss()
+        pos_weight = len(y_train) / (2 * np.sum(y_train == 1))
+        neg_weight = len(y_train) / (2 * np.sum(y_train == 0))
+
+        class_weights = torch.tensor([neg_weight, pos_weight], dtype=torch.float32).to(
+            self.device
+        )
+        criterion = nn.CrossEntropyLoss(weight=class_weights)
         optimizer = optim.Adam(self.classifier.parameters(), lr=self.learning_rate)
 
-        best_val_loss = float("inf")
+        best_metric = 0.0 if selection_metric != "val_loss" else float("inf")
         best_model_state = None
         patience_counter = 0
 
@@ -480,22 +527,39 @@ class ACFDetector:
                 print()
                 continue
 
-            avg_val_loss, val_acc = self.val_step(val_dataloader, criterion, epoch)
+            avg_val_loss, val_acc, precision, recall, f1, f_beta = self.val_step(
+                val_dataloader, criterion, epoch
+            )
 
-            if avg_val_loss < best_val_loss:
-                best_val_loss = avg_val_loss
+            if selection_metric == "precision":
+                current_metric = precision
+            elif selection_metric == "f1":
+                current_metric = f1
+            elif selection_metric == "f_beta":
+                current_metric = f_beta
+            else:  # val_loss
+                current_metric = avg_val_loss
+
+            improved = False
+            if selection_metric == "val_loss":
+                improved = current_metric < best_metric
+            else:
+                improved = current_metric > best_metric
+
+            if improved:
+                best_metric = current_metric
                 best_model_state = self.classifier.state_dict().copy()
                 patience_counter = 0
-                print(f"  → New best validation loss: {best_val_loss:.4f}")
+                print(f"  → New best {selection_metric}: {current_metric:.4f}")
             else:
                 patience_counter += 1
                 print(f"  → No improvement for {patience_counter} epoch(s)")
 
-                if patience_counter >= early_stopping_patience:
-                    print(f"\nEarly stopping triggered after {epoch + 1} epochs!")
-                    print(f"Restoring best model (val_loss={best_val_loss:.4f})")
-                    self.classifier.load_state_dict(best_model_state)
-                    break
+            if patience_counter >= early_stopping_patience:
+                print(f"\nEarly stopping triggered after {epoch + 1} epochs!")
+                print(f"Restoring best model ({selection_metric}={best_metric:.4f})")
+                self.classifier.load_state_dict(best_model_state)
+                break
 
         self.trained = True
         print("Training complete!")

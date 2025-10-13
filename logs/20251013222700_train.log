@@ -1,0 +1,100 @@
+# Changes to this training compared to prior:
+# - pos_iou_thresh=0.7,
+# - neg_iou_thresh=0.5,
+# - hard_neg_iou_range=(0.3, 0.5),
+# - num_neg_per_pos=5,
+
+$ python train.py --annotation_file data/wider_face_split/wider_face_train_bbx_gt.txt --image_dir data/WIDER_train/images/ --val_annotation_file data/wider_face_split/wider_face_val_bbx_gt.txt --val_image_dir data/WIDER_val/images/ --max_images 3000 --max_val_images 750 --hidden_sizes 512 256 128 64
+Initializing ACF detector...
+Configuration:
+  - Window size: [64, 64]
+  - Hidden layers: [512, 256, 128, 64]
+  - Feature resolution: 16x16
+  - Feature vector size: 2560
+  - Learning rate: 0.001
+  - Batch size: 32
+  - Epochs: 10
+
+Starting training...
+Loading annotations...
+Cache miss - extracting features from 3000 images...
+Processing images: 100%|████████████████████████████████████████| 3000/3000 [49:45<00:00,  1.00it/s]
+
+Training classifier on 25716 samples...
+Positive samples: 6429
+Negative samples: 19287
+
+Loading validation data...
+Extracting features from 750 validation images...
+Processing validation images: 100%|███████████████████████████████| 750/750 [12:02<00:00,  1.04it/s]
+Validation samples: 6860
+Positive validation samples: 1715
+Negative validation samples: 5145
+Cached preprocessed features to cache/train_3000_val_750_res_16_win_64x64.pkl
+Feature range: [0.0, 255.0]
+Feature mean: 40.471458435058594, std: 58.811859130859375
+Any NaN: False
+Any Inf: False
+Feature range, normalized: [-9.95676326751709, 30.39890480041504]
+T ┬ Epoch 1/10: 100%|████████████████████████████████████████████| 804/804 [00:06<00:00, 131.41it/s]
+  ├ Train Loss: 0.4511, Train Accuracy: 81.12%
+  ├ Precision: 0.5946, Recall: 0.7692, F1: 0.6707, F-beta: 0.6228
+  └ Pos accuracy: 76.92%, Neg accuracy: 82.52%
+V ┬ Epoch 1/10: 100%|████████████████████████████████████████████| 215/215 [00:00<00:00, 667.08it/s]
+  ├ Val Loss: 0.3365, Val Accuracy: 86.76%
+  ├ Precision: 0.6933, Recall: 0.8437, F1: 0.7612, F-beta: 0.7190
+  └ Pos accuracy: 84.37%, Neg accuracy: 87.56%
+  → New best f_beta: 0.7190
+T ┬ Epoch 2/10: 100%|████████████████████████████████████████████| 804/804 [00:06<00:00, 124.69it/s]
+  ├ Train Loss: 0.3663, Train Accuracy: 86.09%
+  ├ Precision: 0.6847, Recall: 0.8225, F1: 0.7473, F-beta: 0.7084
+  └ Pos accuracy: 82.25%, Neg accuracy: 87.37%
+V ┬ Epoch 2/10: 100%|████████████████████████████████████████████| 215/215 [00:00<00:00, 739.79it/s]
+  ├ Val Loss: 0.3343, Val Accuracy: 85.92%
+  ├ Precision: 0.6736, Recall: 0.8472, F1: 0.7505, F-beta: 0.7024
+  └ Pos accuracy: 84.72%, Neg accuracy: 86.32%
+  → No improvement for 1 epoch(s)
+T ┬ Epoch 3/10: 100%|████████████████████████████████████████████| 804/804 [00:06<00:00, 124.49it/s]
+  ├ Train Loss: 0.3324, Train Accuracy: 87.58%
+  ├ Precision: 0.7130, Recall: 0.8421, F1: 0.7722, F-beta: 0.7356
+  └ Pos accuracy: 84.21%, Neg accuracy: 88.70%
+V ┬ Epoch 3/10: 100%|████████████████████████████████████████████| 215/215 [00:00<00:00, 721.71it/s]
+  ├ Val Loss: 0.3230, Val Accuracy: 88.44%
+  ├ Precision: 0.7476, Recall: 0.8117, F1: 0.7783, F-beta: 0.7596
+  └ Pos accuracy: 81.17%, Neg accuracy: 90.86%
+  → New best f_beta: 0.7596
+T ┬ Epoch 4/10: 100%|████████████████████████████████████████████| 804/804 [00:06<00:00, 124.50it/s]
+  ├ Train Loss: 0.3053, Train Accuracy: 88.49%
+  ├ Precision: 0.7297, Recall: 0.8572, F1: 0.7884, F-beta: 0.7521
+  └ Pos accuracy: 85.72%, Neg accuracy: 89.42%
+V ┬ Epoch 4/10: 100%|████████████████████████████████████████████| 215/215 [00:00<00:00, 722.82it/s]
+  ├ Val Loss: 0.3145, Val Accuracy: 86.75%
+  ├ Precision: 0.6844, Recall: 0.8723, F1: 0.7670, F-beta: 0.7152
+  └ Pos accuracy: 87.23%, Neg accuracy: 86.59%
+  → No improvement for 1 epoch(s)
+T ┬ Epoch 5/10: 100%|████████████████████████████████████████████| 804/804 [00:06<00:00, 132.04it/s]
+  ├ Train Loss: 0.2850, Train Accuracy: 89.17%
+  ├ Precision: 0.7407, Recall: 0.8725, F1: 0.8012, F-beta: 0.7637
+  └ Pos accuracy: 87.25%, Neg accuracy: 89.82%
+V ┬ Epoch 5/10: 100%|████████████████████████████████████████████| 215/215 [00:00<00:00, 722.74it/s]
+  ├ Val Loss: 0.3209, Val Accuracy: 85.74%
+  ├ Precision: 0.6656, Recall: 0.8636, F1: 0.7518, F-beta: 0.6976
+  └ Pos accuracy: 86.36%, Neg accuracy: 85.54%
+  → No improvement for 2 epoch(s)
+T ┬ Epoch 6/10: 100%|████████████████████████████████████████████| 804/804 [00:06<00:00, 130.14it/s]
+  ├ Train Loss: 0.2633, Train Accuracy: 90.05%
+  ├ Precision: 0.7585, Recall: 0.8832, F1: 0.8161, F-beta: 0.7805
+  └ Pos accuracy: 88.32%, Neg accuracy: 90.63%
+V ┬ Epoch 6/10: 100%|████████████████████████████████████████████| 215/215 [00:00<00:00, 720.96it/s]
+  ├ Val Loss: 0.3244, Val Accuracy: 88.67%
+  ├ Precision: 0.7403, Recall: 0.8426, F1: 0.7881, F-beta: 0.7587
+  └ Pos accuracy: 84.26%, Neg accuracy: 90.15%
+  → No improvement for 3 epoch(s)
+
+Early stopping triggered after 6 epochs!
+Restoring best model (f_beta=0.7596)
+Training complete!
+Final training accuracy: 94.23%
+Model saved to models/acf_detector.pkl
+
+Training complete! Model saved to models/acf_detector.pkl

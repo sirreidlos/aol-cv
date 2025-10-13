@@ -86,10 +86,10 @@ def generate_sliding_windows(
 def extract_training_samples_sliding(
     image: np.ndarray,
     annotations: np.ndarray,
-    pos_iou_thresh=0.5,
-    neg_iou_thresh=0.3,
-    hard_neg_iou_range=(0.2, 0.3),
-    num_neg_per_pos=3,
+    pos_iou_thresh=0.7,
+    neg_iou_thresh=0.5,
+    hard_neg_iou_range=(0.3, 0.5),
+    num_neg_per_pos=5,
     window_sizes: List[Tuple[int, int]] = [(64, 64)],
     scale=1.0,
 ) -> Tuple[List[Tuple[int, int, int, int]], List[Tuple[int, int, int, int]]]:
@@ -132,74 +132,6 @@ def extract_training_samples_sliding(
     final_neg = hard_neg_samples[:num_hard] + neg_samples[:num_easy]
 
     return pos_samples, final_neg
-
-
-def extract_training_samples(
-    image: np.ndarray,
-    annotations: np.ndarray,
-    pos_iou_thresh=0.5,
-    neg_iou_thresh=0.3,
-    num_neg_per_pos=3,
-    window_sizes: List[Tuple[int, int]] = [(64, 64)],
-) -> Tuple[List[Tuple[int, int, int, int]], List[Tuple[int, int, int, int]]]:
-    assert annotations.ndim == 2, f"Expected 2D annotations, got {annotations.ndim}D"
-    assert annotations.shape[1] == 4, f"Expected shape [N, 4], got {annotations.shape}"
-
-    height, width = image.shape[:2]
-    pos_samples = []
-    neg_samples = []
-
-    for bbox in annotations:
-        x, y, w, h = bbox
-
-        if x >= 0 and y >= 0 and x + w <= width and y + h <= height:
-            pos_samples.append([x, y, w, h])
-
-        for _ in range(2):
-            dx = np.random.randint(-w // 8, w // 8)
-            dy = np.random.randint(-h // 8, h // 8)
-            dw = np.random.randint(-w // 8, w // 8)
-            dh = np.random.randint(-h // 8, h // 8)
-
-            new_x = max(0, x + dx)
-            new_y = max(0, y + dy)
-            new_w = max(10, w + dw)
-            new_h = max(10, h + dh)
-
-            if new_x + new_w <= width and new_y + new_h <= height:
-                for gt_box in annotations:
-                    if (
-                        compute_iou((new_x, new_y, new_w, new_h), gt_box)
-                        > pos_iou_thresh
-                    ):
-                        pos_samples.append([new_x, new_y, new_w, new_h])
-                        break
-
-    num_neg_needed = len(pos_samples) * num_neg_per_pos
-
-    for win_size in window_sizes:
-        if len(neg_samples) >= num_neg_needed:
-            break
-
-        stride = min(win_size) // 4
-        windows = generate_sliding_windows((height, width), win_size, stride)
-
-        np.random.shuffle(windows)
-
-        for window in windows:
-            if len(neg_samples) >= num_neg_needed:
-                break
-
-            is_negative = True
-            for gt_box in annotations:
-                if compute_iou(window, gt_box) > neg_iou_thresh:
-                    is_negative = False
-                    break
-
-            if is_negative:
-                neg_samples.append(window)
-
-    return pos_samples, neg_samples
 
 
 def load_image(image_path: str, base_dir: str | None = None) -> np.ndarray:

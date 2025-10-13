@@ -117,9 +117,18 @@ def detect_multiscale(
                 continue
 
             features_numpy = np.array(batch_features)
-            features_numpy_normalized = (features_numpy - detector.mean) / detector.std
+            features_numpy_reshaped = features_numpy.reshape(
+                -1, detector.feature_resolution, detector.feature_resolution, 10
+            )
+            features_normalized = (
+                features_numpy_reshaped - detector.mean
+            ) / detector.std
+            features_numpy = features_normalized.reshape(
+                -1, detector.feature_resolution * detector.feature_resolution * 10
+            )
+
             features_tensor = (
-                torch.from_numpy(features_numpy_normalized).float().to(detector.device)
+                torch.from_numpy(features_numpy).float().to(detector.device)
             )
 
             outputs = detector.classifier(features_tensor)

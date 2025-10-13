@@ -1,0 +1,115 @@
+# Changes to this training compared to prior:
+# - Added BatchNorm1d layer
+# - Set Dropout to 0.5
+
+$ python train.py --annotation_file data/wider_face_split/wider_face_train_bbx_gt.txt --image_dir data/WIDER_train/images/ --val_annotation_file data/wider_face_split/wider_face_val_bbx_gt.txt --val_image_dir data/WIDER_val/images/ --max_images 6000 --max_val_images 1500 --hidden_sizes 512 256 128 64
+Initializing ACF detector...
+Configuration:
+  - Window size: [64, 64]
+  - Hidden layers: [512, 256, 128, 64]
+  - Feature resolution: 16x16
+  - Feature vector size: 2560
+  - Learning rate: 0.001
+  - Batch size: 32
+  - Epochs: 10
+
+Starting training...
+Loading annotations...
+Loading cached features from cache/train_6000_val_1500_res_16_win_64x64.pkl...
+Using cached preprocessed features!
+Loaded 354104 training samples from cache
+Positive samples: 88526
+Negative samples: 265578
+Loaded 96956 validation samples from cache
+Positive validation samples: 24239
+Negative validation samples: 72717
+Feature range: [0.0, 255.0]
+Feature mean: 39.3557243347168, std: 57.914894104003906
+Any NaN: False
+Any Inf: False
+Feature range, normalized: [-9.088333129882812, 32.26054382324219]
+[TRAIN] Epoch 1/10: 100%|████████████| 11066/11066 [03:07<00:00, 58.88it/s, loss=0.4657, acc=83.03%]
+[TRAIN] Epoch 1/10 - Loss: 0.4171, Accuracy: 83.03%
+  Pos accuracy: 79.08%, Neg accuracy: 84.35%
+[VAL] Epoch 1/10: 100%|███████████████| 3030/3030 [00:05<00:00, 592.62it/s, loss=0.1722, acc=85.88%]
+ - Val Loss: 0.3632, Val Accuracy: 85.88%
+
+  Pos accuracy: 82.09%, Neg accuracy: 87.14%
+  → New best validation loss: 0.3632
+[TRAIN] Epoch 2/10: 100%|████████████| 11066/11066 [03:11<00:00, 57.86it/s, loss=0.5171, acc=85.59%]
+[TRAIN] Epoch 2/10 - Loss: 0.3745, Accuracy: 85.59%
+  Pos accuracy: 80.53%, Neg accuracy: 87.28%
+[VAL] Epoch 2/10: 100%|███████████████| 3030/3030 [00:05<00:00, 543.23it/s, loss=0.1072, acc=86.96%]
+ - Val Loss: 0.3343, Val Accuracy: 86.96%
+
+  Pos accuracy: 82.94%, Neg accuracy: 88.30%
+  → New best validation loss: 0.3343
+[TRAIN] Epoch 3/10: 100%|████████████| 11066/11066 [03:12<00:00, 57.52it/s, loss=0.3659, acc=86.66%]
+[TRAIN] Epoch 3/10 - Loss: 0.3525, Accuracy: 86.66%
+  Pos accuracy: 81.69%, Neg accuracy: 88.32%
+[VAL] Epoch 3/10: 100%|███████████████| 3030/3030 [00:07<00:00, 417.10it/s, loss=0.0792, acc=87.41%]
+ - Val Loss: 0.3216, Val Accuracy: 87.41%
+
+  Pos accuracy: 83.21%, Neg accuracy: 88.82%
+  → New best validation loss: 0.3216
+[TRAIN] Epoch 4/10: 100%|████████████| 11066/11066 [03:24<00:00, 54.23it/s, loss=0.4715, acc=87.47%]
+[TRAIN] Epoch 4/10 - Loss: 0.3362, Accuracy: 87.47%
+  Pos accuracy: 82.43%, Neg accuracy: 89.15%
+[VAL] Epoch 4/10: 100%|███████████████| 3030/3030 [00:04<00:00, 618.89it/s, loss=0.0896, acc=87.70%]
+ - Val Loss: 0.3193, Val Accuracy: 87.70%
+
+  Pos accuracy: 83.31%, Neg accuracy: 89.17%
+  → New best validation loss: 0.3193
+[TRAIN] Epoch 5/10: 100%|████████████| 11066/11066 [03:23<00:00, 54.51it/s, loss=0.2419, acc=88.20%]
+[TRAIN] Epoch 5/10 - Loss: 0.3228, Accuracy: 88.20%
+  Pos accuracy: 82.88%, Neg accuracy: 89.97%
+[VAL] Epoch 5/10: 100%|███████████████| 3030/3030 [00:14<00:00, 207.02it/s, loss=0.0516, acc=88.61%]
+ - Val Loss: 0.3049, Val Accuracy: 88.61%
+
+  Pos accuracy: 83.01%, Neg accuracy: 90.48%
+  → New best validation loss: 0.3049
+[TRAIN] Epoch 6/10: 100%|████████████| 11066/11066 [03:32<00:00, 52.16it/s, loss=0.8903, acc=88.59%]
+[TRAIN] Epoch 6/10 - Loss: 0.3113, Accuracy: 88.59%
+  Pos accuracy: 83.66%, Neg accuracy: 90.23%
+[VAL] Epoch 6/10: 100%|███████████████| 3030/3030 [00:08<00:00, 346.93it/s, loss=0.0576, acc=87.74%]
+ - Val Loss: 0.3097, Val Accuracy: 87.74%
+
+  Pos accuracy: 84.48%, Neg accuracy: 88.83%
+  → No improvement for 1 epoch(s)
+[TRAIN] Epoch 7/10: 100%|████████████| 11066/11066 [03:21<00:00, 54.89it/s, loss=0.1865, acc=88.95%]
+[TRAIN] Epoch 7/10 - Loss: 0.3024, Accuracy: 88.95%
+  Pos accuracy: 84.28%, Neg accuracy: 90.50%
+[VAL] Epoch 7/10: 100%|███████████████| 3030/3030 [00:08<00:00, 351.24it/s, loss=0.0460, acc=88.85%]
+ - Val Loss: 0.3017, Val Accuracy: 88.85%
+
+  Pos accuracy: 83.23%, Neg accuracy: 90.72%
+  → New best validation loss: 0.3017
+[TRAIN] Epoch 8/10: 100%|████████████| 11066/11066 [03:36<00:00, 51.08it/s, loss=0.6393, acc=89.19%]
+[TRAIN] Epoch 8/10 - Loss: 0.2933, Accuracy: 89.19%
+  Pos accuracy: 84.73%, Neg accuracy: 90.67%
+[VAL] Epoch 8/10: 100%|███████████████| 3030/3030 [00:04<00:00, 647.69it/s, loss=0.0411, acc=88.49%]
+ - Val Loss: 0.2999, Val Accuracy: 88.49%
+
+  Pos accuracy: 83.84%, Neg accuracy: 90.04%
+  → New best validation loss: 0.2999
+[TRAIN] Epoch 9/10: 100%|████████████| 11066/11066 [03:11<00:00, 57.86it/s, loss=0.2954, acc=89.46%]
+[TRAIN] Epoch 9/10 - Loss: 0.2851, Accuracy: 89.46%
+  Pos accuracy: 85.23%, Neg accuracy: 90.87%
+[VAL] Epoch 9/10: 100%|███████████████| 3030/3030 [00:13<00:00, 217.60it/s, loss=0.0391, acc=89.03%]
+ - Val Loss: 0.3001, Val Accuracy: 89.03%
+
+  Pos accuracy: 82.89%, Neg accuracy: 91.07%
+  → No improvement for 1 epoch(s)
+[TRAIN] Epoch 10/10: 100%|███████████| 11066/11066 [03:08<00:00, 58.66it/s, loss=0.2628, acc=89.81%]
+[TRAIN] Epoch 10/10 - Loss: 0.2777, Accuracy: 89.81%
+  Pos accuracy: 85.57%, Neg accuracy: 91.22%
+[VAL] Epoch 10/10: 100%|██████████████| 3030/3030 [00:08<00:00, 370.12it/s, loss=0.0316, acc=89.94%]
+ - Val Loss: 0.2910, Val Accuracy: 89.94%
+
+  Pos accuracy: 81.23%, Neg accuracy: 92.84%
+  → New best validation loss: 0.2910
+Training complete!
+Final training accuracy: 93.81%
+Model saved to models/acf_detector.pkl
+
+Training complete! Model saved to models/acf_detector.pkl

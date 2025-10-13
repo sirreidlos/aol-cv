@@ -45,7 +45,7 @@ def main():
     
     all_metrics = []
     
-    for img_path in tqdm(image_paths, desc="Evaluating"):
+    for img_path in tqdm(image_paths, desc="Evaluating", ncols=100):
         try:
             image = load_image(img_path, args.image_dir)
             

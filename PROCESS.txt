@@ -1,0 +1,52 @@
+This is a high-level overview of the training process.
+
+get_train_data()
+├─┬ parse_wider_face_annotation()
+│ └── Desc: Parses the WIDER FACE annotation, returning a dictionary of image 
+│           path as the key and a list of bounding boxes as the value.
+│
+├─┬ compute_channel_pyramid()
+│ ├── Desc: Computes the ten channels on the entire image on different scales,
+│ │         returning a list of tuples consisting of the scaled image, the 
+│ │         channel of the scaled image, and the scale itself
+│ └── Note: At the call site, the channels is unused, opting with computing the
+│           channel values individually per window instead. You may optimize it
+│           either by removing the computation here or using the window to 
+│           slice the channel instead.
+│
+├─┬ extract_training_samples_sliding()
+│ └── Desc: Get training samples by running a sliding window on each scaled 
+│           image and computing the IoU of the windows against the window, 
+│           placing each on either positive, negative, or hard negative. This 
+│           function also ensures that the ratio between negative and hard 
+│           negative is 1:1.  
+│
+└─┬ self.extract_features()
+  ├── Desc: Takes in an image and the region of interest (RoI), returning a
+  │         feature vector.
+  ├── Note: The vector is later reshaped again into feature maps for
+  │         standardization.
+  └─┐       
+    ├─┬ resize_sample() 
+    │ ├── Desc: Take a slice of the image and resize it to the target size.
+    │ └── Note: The resize is usually a no-op since the RoI has the same size as 
+    │           the target_size.
+    │
+    ├─┬ compute_channels()
+    │ ├── Desc: Takes in an image and returns ten feature maps. 
+    │ └── Note: No normalization is done here.
+    │
+    └─┬ aggregate_channels()
+      └── Desc: Resizes every channels into the shape of a square with length 
+                feature_resolution, then flattens the channels into a vector.
+
+train()
+├─┬ standardization 
+│ └── Desc: Do standardization per channel. Previously, it was done at once, but
+│           considering that each channel have different ranges, it was decided
+│           that a standardization done per channel is better.
+│
+└─┬ class weighing 
+  └── Desc: Class weighing is done because for many rounds of training the
+            precision is too low. Even now, it is still giving highly confident
+            false positives.
