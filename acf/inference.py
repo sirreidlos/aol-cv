@@ -81,7 +81,7 @@ def detect_multiscale(
 
     all_windows_data = []
 
-    for scaled_img, _, scale in pyramid:
+    for scaled_img, scale in pyramid:
         h, w = scaled_img.shape[:2]
         win_w, win_h = detector.window_size
 
@@ -99,6 +99,7 @@ def detect_multiscale(
             desc="Detecting faces",
             unit="batch",
             ncols=100,
+            # disable=True,
         ):
             batch_windows = all_windows_data[i : i + batch_size]
             batch_features = []
@@ -135,6 +136,12 @@ def detect_multiscale(
 
             probs = torch.softmax(outputs, dim=1)
             scores = probs[:, 1].cpu().numpy()
+
+            # print(
+            #     f"Score distribution: min={scores.min()}, max={scores.max()}, mean={scores.mean()}"
+            # )
+            # print(f"Scores > 0.5: {(scores > 0.5).sum()} / {len(scores)}")
+            # print(f"Scores > 0.9: {(scores > 0.9).sum()} / {len(scores)}")
 
             for idx, (window, scale) in enumerate(batch_metadata):
                 score = scores[idx]

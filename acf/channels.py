@@ -59,10 +59,10 @@ def aggregate_channels(channels: np.ndarray, feature_resolution: int) -> np.ndar
 
 def compute_channel_pyramid(
     image: np.ndarray, scales: List[float]
-) -> List[Tuple[np.ndarray, np.ndarray, float]]:
+) -> List[Tuple[np.ndarray, float]]:
     """
     image: [H, W, C] (RGB)
-    out: List of [H * scale, W * scale, 3], [H * scale, W * scale, 10], scale
+    out: List of [H * scale, W * scale, 3], scale
     """
     pyramid = []
 
@@ -74,8 +74,7 @@ def compute_channel_pyramid(
             continue
 
         scaled_img = cv2.resize(image, (new_w, new_h), interpolation=cv2.INTER_LINEAR)
-        channels = compute_channels(scaled_img)
 
-        pyramid.append((scaled_img, channels, scale))
+        pyramid.append((scaled_img, scale))
 
     return pyramid

@@ -50,6 +50,7 @@ class ACFDetector:
         learning_rate=0.001,
         batch_size=32,
         epochs=10,
+        selection_metric="f_beta",  # or 'precision', 'f1', 'val_loss'
     ):
         self.window_size = window_size
         self.hidden_sizes = hidden_sizes
@@ -57,6 +58,7 @@ class ACFDetector:
         self.learning_rate = learning_rate
         self.batch_size = batch_size
         self.epochs = epochs
+        self.selection_metric = selection_metric
 
         input_size = 10 * feature_resolution * feature_resolution
 
@@ -307,7 +309,7 @@ class ACFDetector:
                 neg_count = 0
                 pos_samples_needed = len(gt_boxes) * 3
 
-                for scaled_img, _, scale in pyramid:
+                for scaled_img, scale in pyramid:
                     h, w = scaled_img.shape[:2]
                     win_w, win_h = self.window_size
 
@@ -315,7 +317,7 @@ class ACFDetector:
                         continue
 
                     pos_samples, neg_samples = extract_training_samples_sliding(
-                        scaled_img, gt_boxes, scale=scale
+                        scaled_img, gt_boxes, scale=scale, window_size=self.window_size
                     )
 
                     for pos_sample in pos_samples:
@@ -408,7 +410,7 @@ class ACFDetector:
                 neg_count = 0
                 pos_samples_needed = len(gt_boxes) * 3
 
-                for scaled_img, _, scale in pyramid:
+                for scaled_img, scale in pyramid:
                     h, w = scaled_img.shape[:2]
                     win_w, win_h = self.window_size
 
@@ -416,7 +418,7 @@ class ACFDetector:
                         continue
 
                     pos_samples, neg_samples = extract_training_samples_sliding(
-                        scaled_img, gt_boxes, scale=scale
+                        scaled_img, gt_boxes, scale=scale, window_size=self.window_size
                     )
 
                     for pos_sample in pos_samples:
@@ -458,29 +460,49 @@ class ACFDetector:
         X_val: np.ndarray,
         y_val: np.ndarray,
         early_stopping_patience=5,
-        selection_metric="f_beta",  # or 'precision', 'f1', 'val_loss'
     ):
-        print(f"Feature range: [{X_train.min()}, {X_train.max()}]")
-        print(f"Feature mean: {X_train.mean()}, std: {X_train.std()}")
         print(f"Any NaN: {np.isnan(X_train).any()}")
         print(f"Any Inf: {np.isinf(X_train).any()}")
 
-        X_train_reshaped = X_train.reshape(
+        X_train_r = X_train.reshape(
             -1, self.feature_resolution, self.feature_resolution, 10
         )
 
-        mean = X_train_reshaped.mean(axis=(0, 1, 2), keepdims=True)
-        std = X_train_reshaped.std(axis=(0, 1, 2), keepdims=True) + 1e-8
+        print(f"Feature range L:    [{X_train_r[:, 0].min()}, {X_train_r[:, 0].max()}]")
+        print(f"Feature range U:    [{X_train_r[:, 1].min()}, {X_train_r[:, 1].max()}]")
+        print(f"Feature range V:    [{X_train_r[:, 2].min()}, {X_train_r[:, 2].max()}]")
+        print(f"Feature range mag:  [{X_train_r[:, 3].min()}, {X_train_r[:, 3].max()}]")
+        print(f"Feature range hog1: [{X_train_r[:, 4].min()}, {X_train_r[:, 4].max()}]")
+        print(f"Feature range hog2: [{X_train_r[:, 5].min()}, {X_train_r[:, 5].max()}]")
+        print(f"Feature range hog3: [{X_train_r[:, 6].min()}, {X_train_r[:, 6].max()}]")
+        print(f"Feature range hog4: [{X_train_r[:, 7].min()}, {X_train_r[:, 7].max()}]")
+        print(f"Feature range hog5: [{X_train_r[:, 8].min()}, {X_train_r[:, 8].max()}]")
+        print(f"Feature range hog6: [{X_train_r[:, 9].min()}, {X_train_r[:, 9].max()}]")
+
+        mean = X_train_r.mean(axis=(0, 1, 2), keepdims=True)
+        std = X_train_r.std(axis=(0, 1, 2), keepdims=True) + 1e-8
 
         self.mean = mean.astype(np.float32)
         self.std = std.astype(np.float32)
 
-        X_train_standardized = (X_train_reshaped - mean) / std
-        X_train = X_train_standardized.reshape(
+        X_train_s = (X_train_r - mean) / std
+
+        print(mean, std)
+
+        print(f"Feature range L:    [{X_train_s[:, 0].min()}, {X_train_s[:, 0].max()}]")
+        print(f"Feature range U:    [{X_train_s[:, 1].min()}, {X_train_s[:, 1].max()}]")
+        print(f"Feature range V:    [{X_train_s[:, 2].min()}, {X_train_s[:, 2].max()}]")
+        print(f"Feature range mag:  [{X_train_s[:, 3].min()}, {X_train_s[:, 3].max()}]")
+        print(f"Feature range hog1: [{X_train_s[:, 4].min()}, {X_train_s[:, 4].max()}]")
+        print(f"Feature range hog2: [{X_train_s[:, 5].min()}, {X_train_s[:, 5].max()}]")
+        print(f"Feature range hog3: [{X_train_s[:, 6].min()}, {X_train_s[:, 6].max()}]")
+        print(f"Feature range hog4: [{X_train_s[:, 7].min()}, {X_train_s[:, 7].max()}]")
+        print(f"Feature range hog5: [{X_train_s[:, 8].min()}, {X_train_s[:, 8].max()}]")
+        print(f"Feature range hog6: [{X_train_s[:, 9].min()}, {X_train_s[:, 9].max()}]")
+
+        X_train = X_train_s.reshape(
             -1, self.feature_resolution * self.feature_resolution * 10
         )
-
-        print(f"Feature range, standardized: [{X_train.min()}, {X_train.max()}]")
 
         X_tensor = torch.from_numpy(X_train).to(self.device)
         y_tensor = torch.from_numpy(y_train).to(self.device)
@@ -514,7 +536,7 @@ class ACFDetector:
         criterion = nn.CrossEntropyLoss(weight=class_weights)
         optimizer = optim.Adam(self.classifier.parameters(), lr=self.learning_rate)
 
-        best_metric = 0.0 if selection_metric != "val_loss" else float("inf")
+        best_metric = 0.0 if self.selection_metric != "val_loss" else float("inf")
         best_model_state = None
         patience_counter = 0
 
@@ -531,17 +553,17 @@ class ACFDetector:
                 val_dataloader, criterion, epoch
             )
 
-            if selection_metric == "precision":
+            if self.selection_metric == "precision":
                 current_metric = precision
-            elif selection_metric == "f1":
+            elif self.selection_metric == "f1":
                 current_metric = f1
-            elif selection_metric == "f_beta":
+            elif self.selection_metric == "f_beta":
                 current_metric = f_beta
             else:  # val_loss
                 current_metric = avg_val_loss
 
             improved = False
-            if selection_metric == "val_loss":
+            if self.selection_metric == "val_loss":
                 improved = current_metric < best_metric
             else:
                 improved = current_metric > best_metric
@@ -550,14 +572,16 @@ class ACFDetector:
                 best_metric = current_metric
                 best_model_state = self.classifier.state_dict().copy()
                 patience_counter = 0
-                print(f"  → New best {selection_metric}: {current_metric:.4f}")
+                print(f"  → New best {self.selection_metric}: {current_metric:.4f}")
             else:
                 patience_counter += 1
                 print(f"  → No improvement for {patience_counter} epoch(s)")
 
             if patience_counter >= early_stopping_patience:
                 print(f"\nEarly stopping triggered after {epoch + 1} epochs!")
-                print(f"Restoring best model ({selection_metric}={best_metric:.4f})")
+                print(
+                    f"Restoring best model ({self.selection_metric}={best_metric:.4f})"
+                )
                 self.classifier.load_state_dict(best_model_state)
                 break
 

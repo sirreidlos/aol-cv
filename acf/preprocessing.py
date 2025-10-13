@@ -90,7 +90,7 @@ def extract_training_samples_sliding(
     neg_iou_thresh=0.5,
     hard_neg_iou_range=(0.3, 0.5),
     num_neg_per_pos=5,
-    window_sizes: List[Tuple[int, int]] = [(64, 64)],
+    window_size: Tuple[int, int] = (64, 64),
     scale=1.0,
 ) -> Tuple[List[Tuple[int, int, int, int]], List[Tuple[int, int, int, int]]]:
     assert annotations.ndim == 2, f"Expected 2D annotations, got {annotations.ndim}D"
@@ -101,29 +101,28 @@ def extract_training_samples_sliding(
     neg_samples = []
     hard_neg_samples = []
 
-    for win_size in window_sizes:
-        stride = min(win_size) // 4
-        windows = generate_sliding_windows((height, width), win_size, stride)
-        np.random.shuffle(windows)
+    stride = min(window_size) // 4
+    windows = generate_sliding_windows((height, width), window_size, stride)
+    np.random.shuffle(windows)
 
-        for win in windows:
-            x, y, win_w, win_h = win
+    for win in windows:
+        x, y, win_w, win_h = win
 
-            orig_x, orig_y = int(x / scale), int(y / scale)
-            orig_w, orig_h = int(win_w / scale), int(win_h / scale)
+        orig_x, orig_y = int(x / scale), int(y / scale)
+        orig_w, orig_h = int(win_w / scale), int(win_h / scale)
 
-            orig_win = (orig_x, orig_y, orig_w, orig_h)
+        orig_win = (orig_x, orig_y, orig_w, orig_h)
 
-            max_iou = 0
-            for gt_box in annotations:
-                max_iou = max(max_iou, compute_iou(orig_win, gt_box))
+        max_iou = 0
+        for gt_box in annotations:
+            max_iou = max(max_iou, compute_iou(orig_win, gt_box))
 
-            if max_iou >= pos_iou_thresh:
-                pos_samples.append(win)
-            elif hard_neg_iou_range[0] <= max_iou < hard_neg_iou_range[1]:
-                hard_neg_samples.append(win)
-            elif max_iou < neg_iou_thresh:
-                neg_samples.append(win)
+        if max_iou >= pos_iou_thresh:
+            pos_samples.append(win)
+        elif hard_neg_iou_range[0] <= max_iou < hard_neg_iou_range[1]:
+            hard_neg_samples.append(win)
+        elif max_iou < neg_iou_thresh:
+            neg_samples.append(win)
 
     num_neg_needed = len(pos_samples) * num_neg_per_pos
     num_hard = min(len(hard_neg_samples), num_neg_needed // 2)

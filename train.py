@@ -32,8 +32,10 @@ def main():
                        help='Path to validation image directory (optional)')
     parser.add_argument('--max_val_images', type=int, default=None,
                        help='Maximum number of validation images (None for all)')
-    parser.add_argument('--early_stopping_patience', type=int, default=3,
+    parser.add_argument('--patience', type=int, default=3,
                        help='Number of epochs without improvement before early stopping (default: 3)')
+    parser.add_argument('--selection_metric', type=str, default="f_beta",
+                       help='The metric used for early stopping (default: f_beta 0.5)')
     
     args = parser.parse_args()
     
@@ -55,7 +57,8 @@ def main():
         feature_resolution=args.feature_resolution,
         learning_rate=args.learning_rate,
         batch_size=args.batch_size,
-        epochs=args.epochs
+        epochs=args.epochs,
+        selection_metric=args.selection_metric
     )
     
     print("\nStarting training...")
@@ -68,7 +71,7 @@ def main():
         max_val_images=args.max_val_images,
     )
     detector.train(X_train, y_train, X_val, y_val,
-        early_stopping_patience=args.early_stopping_patience
+        early_stopping_patience=args.patience
     )
     
     detector.save(args.output_model)
