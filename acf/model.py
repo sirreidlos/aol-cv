@@ -8,8 +8,14 @@ from torch.utils.data import TensorDataset, DataLoader
 import os
 from typing import Tuple
 import cv2
+from sklearn.metrics import average_precision_score
 
-from .channels import aggregate_channels, compute_channel_pyramid, compute_channels
+from .channels import (
+    aggregate_channels,
+    compute_channel_pyramid,
+    compute_channels,
+    smooth_channels,
+)
 from .preprocessing import (
     extract_training_samples_sliding,
     parse_wider_face_annotation,
@@ -20,7 +26,7 @@ from .preprocessing import (
 
 
 class MLPClassifier(nn.Module):
-    def __init__(self, input_size=2560, hidden_sizes=[512, 256], num_classes=2):
+    def __init__(self, input_size, hidden_sizes, num_classes=2):
         super(MLPClassifier, self).__init__()
 
         layers = []
@@ -28,9 +34,8 @@ class MLPClassifier(nn.Module):
 
         for hidden_size in hidden_sizes:
             layers.append(nn.Linear(prev_size, hidden_size))
-            layers.append(nn.BatchNorm1d(hidden_size))
             layers.append(nn.ReLU())
-            layers.append(nn.Dropout(0.5))
+            layers.append(nn.Dropout(0.3))
             prev_size = hidden_size
 
         layers.append(nn.Linear(prev_size, num_classes))
@@ -50,7 +55,11 @@ class ACFDetector:
         learning_rate=0.001,
         batch_size=32,
         epochs=10,
-        selection_metric="f_beta",  # or 'precision', 'f1', 'val_loss'
+        selection_metric="f_beta",
+        pos_iou_thresh=0.5,
+        neg_iou_thresh=0.3,
+        hard_neg_iou_range=(0.1, 0.3),
+        num_neg_per_pos=3,
     ):
         self.window_size = window_size
         self.hidden_sizes = hidden_sizes
@@ -59,6 +68,10 @@ class ACFDetector:
         self.batch_size = batch_size
         self.epochs = epochs
         self.selection_metric = selection_metric
+        self.pos_iou_thresh = pos_iou_thresh
+        self.neg_iou_thresh = neg_iou_thresh
+        self.hard_neg_iou_range = hard_neg_iou_range
+        self.num_neg_per_pos = num_neg_per_pos
 
         input_size = 10 * feature_resolution * feature_resolution
 
@@ -81,7 +94,8 @@ class ACFDetector:
         """
         resized = resize_sample(image, roi, self.window_size)
         channels = compute_channels(resized)
-        aggregated = aggregate_channels(channels, self.feature_resolution)
+        smoothed = smooth_channels(channels)
+        aggregated = aggregate_channels(smoothed, self.feature_resolution)
 
         return aggregated.flatten()
 
@@ -92,7 +106,13 @@ class ACFDetector:
         feature_resolution: int,
         window_size: Tuple[int, int],
     ):
-        key_str = f"train_{num_train_images}_val_{num_val_images}_res_{feature_resolution}_win_{window_size[0]}x{window_size[1]}"
+        key_str = (
+            f"train_{num_train_images}_val_{num_val_images}_"
+            f"res_{feature_resolution}_win_{window_size[0]}x{window_size[1]}_"
+            f"pos{self.pos_iou_thresh}_neg{self.neg_iou_thresh}_"
+            f"hard{self.hard_neg_iou_range[0]}-{self.hard_neg_iou_range[1]}_"
+            f"ratio{self.num_neg_per_pos}"
+        )
         return key_str
 
     def _save_cache(self, cache_key: str, X_train, y_train, X_val=None, y_val=None):
@@ -174,9 +194,8 @@ class ACFDetector:
         neg_acc = (all_preds[all_labels == 0] == 0).mean() * 100
 
         print(f"  ├ Train Loss: {avg_loss:.4f}, Train Accuracy: {epoch_acc:.2f}%")
-        print(
-            f"  ├ Precision: {precision:.4f}, Recall: {recall:.4f}, F1: {f1:.4f}, F-beta: {f_beta:.4f}"
-        )
+        print(f"  ├ Precision: {precision:.4f}, Recall: {recall:.4f}")
+        print(f"  ├ F1: {f1:.4f}, F-beta: {f_beta:.4f}")
         print(f"  └ Pos accuracy: {pos_acc:.2f}%, Neg accuracy: {neg_acc:.2f}%")
 
         return avg_loss, epoch_acc
@@ -228,16 +247,22 @@ class ACFDetector:
             (1 + beta**2) * precision * recall / (beta**2 * precision + recall + 1e-6)
         )
 
+        all_labels = np.array(all_labels, dtype=int)
+        all_probs = np.array(all_probs, dtype=float)
+
+        # kinda misleading, but it should be correct to consider this as map
+        # because it only has one class to classify
+        map_score = average_precision_score(all_labels, all_probs)
+
         pos_acc = (all_preds[all_labels == 1] == 1).mean() * 100
         neg_acc = (all_preds[all_labels == 0] == 0).mean() * 100
 
         print(f"  ├ Val Loss: {avg_val_loss:.4f}, Val Accuracy: {val_acc:.2f}%")
-        print(
-            f"  ├ Precision: {precision:.4f}, Recall: {recall:.4f}, F1: {f1:.4f}, F-beta: {f_beta:.4f}"
-        )
+        print(f"  ├ Precision: {precision:.4f}, Recall: {recall:.4f}")
+        print(f"  ├ F1: {f1:.4f}, F-beta: {f_beta:.4f} mAP: {map_score:.4f}")
         print(f"  └ Pos accuracy: {pos_acc:.2f}%, Neg accuracy: {neg_acc:.2f}%")
 
-        return avg_val_loss, val_acc, precision, recall, f1, f_beta
+        return avg_val_loss, val_acc, precision, recall, f1, f_beta, map_score
 
     def get_train_data(
         self,
@@ -307,7 +332,7 @@ class ACFDetector:
 
                 pos_count = 0
                 neg_count = 0
-                pos_samples_needed = len(gt_boxes) * 3
+                pos_samples_needed = len(gt_boxes) * self.num_neg_per_pos
 
                 for scaled_img, scale in pyramid:
                     h, w = scaled_img.shape[:2]
@@ -317,7 +342,14 @@ class ACFDetector:
                         continue
 
                     pos_samples, neg_samples = extract_training_samples_sliding(
-                        scaled_img, gt_boxes, scale=scale, window_size=self.window_size
+                        scaled_img,
+                        gt_boxes,
+                        pos_iou_thresh=self.pos_iou_thresh,
+                        neg_iou_thresh=self.neg_iou_thresh,
+                        hard_neg_iou_range=self.hard_neg_iou_range,
+                        num_neg_per_pos=self.num_neg_per_pos,
+                        window_size=self.window_size,
+                        scale=scale,
                     )
 
                     for pos_sample in pos_samples:
@@ -366,7 +398,7 @@ class ACFDetector:
                         #         f"debug_neg_samples/neg_{len(X_train)}_iou{best_iou:.2f}.jpg",
                         #         cv2.cvtColor(patch, cv2.COLOR_RGB2BGR),
                         #     )
-                        if neg_count >= pos_count * 3:
+                        if neg_count >= pos_count * self.num_neg_per_pos:
                             break
 
                         features = self.extract_features(scaled_img, neg_sample)
@@ -418,7 +450,14 @@ class ACFDetector:
                         continue
 
                     pos_samples, neg_samples = extract_training_samples_sliding(
-                        scaled_img, gt_boxes, scale=scale, window_size=self.window_size
+                        scaled_img,
+                        gt_boxes,
+                        pos_iou_thresh=self.pos_iou_thresh,
+                        neg_iou_thresh=self.neg_iou_thresh,
+                        hard_neg_iou_range=self.hard_neg_iou_range,
+                        num_neg_per_pos=self.num_neg_per_pos,
+                        window_size=self.window_size,
+                        scale=scale,
                     )
 
                     for pos_sample in pos_samples:
@@ -431,7 +470,7 @@ class ACFDetector:
                         pos_count += 1
 
                     for neg_sample in neg_samples:
-                        if neg_count >= pos_count * 3:
+                        if neg_count >= pos_count * self.num_neg_per_pos:
                             break
 
                         features = self.extract_features(scaled_img, neg_sample)
@@ -486,6 +525,7 @@ class ACFDetector:
         self.std = std.astype(np.float32)
 
         X_train_s = (X_train_r - mean) / std
+        # X_train_s = X_train_r / 255.0 # i dont think this one worked
 
         print(mean, std)
 
@@ -549,8 +589,8 @@ class ACFDetector:
                 print()
                 continue
 
-            avg_val_loss, val_acc, precision, recall, f1, f_beta = self.val_step(
-                val_dataloader, criterion, epoch
+            avg_val_loss, val_acc, precision, recall, f1, f_beta, map_score = (
+                self.val_step(val_dataloader, criterion, epoch)
             )
 
             if self.selection_metric == "precision":
@@ -559,6 +599,8 @@ class ACFDetector:
                 current_metric = f1
             elif self.selection_metric == "f_beta":
                 current_metric = f_beta
+            elif self.selection_metric == "map":
+                current_metric = map_score
             else:  # val_loss
                 current_metric = avg_val_loss
 
@@ -584,6 +626,8 @@ class ACFDetector:
                 )
                 self.classifier.load_state_dict(best_model_state)
                 break
+
+            print()
 
         self.trained = True
         print("Training complete!")

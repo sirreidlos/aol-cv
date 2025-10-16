@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
 from typing import List, Tuple
+from scipy.ndimage import gaussian_filter
 
 
 def compute_channels(image: np.ndarray) -> np.ndarray:
@@ -32,10 +33,10 @@ def compute_channels(image: np.ndarray) -> np.ndarray:
     return np.stack(channels, axis=-1)
 
 
-def smooth_channels(channels, kernel_size=5):
+def smooth_channels(channels, sigma=1):
     smoothed = np.zeros_like(channels)
     for i in range(channels.shape[-1]):
-        smoothed[..., i] = cv2.blur(channels[..., i], (kernel_size, kernel_size))
+        smoothed[..., i] = gaussian_filter(channels[..., i], sigma=sigma)
     return smoothed
 
 
