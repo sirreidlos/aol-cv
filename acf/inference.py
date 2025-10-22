@@ -93,69 +93,59 @@ def detect_multiscale(
         for window in windows:
             all_windows_data.append((scaled_img, window, scale))
 
-    with torch.no_grad():
-        for i in tqdm(
-            range(0, len(all_windows_data), batch_size),
-            desc="Detecting faces",
-            unit="batch",
-            ncols=100,
-            # disable=True,
-        ):
-            batch_windows = all_windows_data[i : i + batch_size]
-            batch_features = []
-            batch_metadata = []
+    for i in tqdm(
+        range(0, len(all_windows_data), batch_size),
+        desc="Detecting faces",
+        unit="batch",
+        ncols=100,
+        # disable=True,
+    ):
+        batch_windows = all_windows_data[i : i + batch_size]
+        batch_features = []
+        batch_metadata = []
 
-            for scaled_img, window, scale in batch_windows:
-                try:
-                    features = detector.extract_features(scaled_img, window)
-                    batch_features.append(features)
-                    batch_metadata.append((window, scale))
-                except Exception as e:
-                    print(f"[ERROR] {e}")
-                    continue
-
-            if len(batch_features) == 0:
+        for scaled_img, window, scale in batch_windows:
+            try:
+                features = detector.extract_features(scaled_img, window)
+                batch_features.append(features)
+                batch_metadata.append((window, scale))
+            except Exception as e:
+                print(f"[ERROR] {e}")
                 continue
 
-            features_numpy = np.array(batch_features)
-            features_numpy_reshaped = features_numpy.reshape(
-                -1, detector.feature_resolution, detector.feature_resolution, 10
-            )
-            features_normalized = (
-                features_numpy_reshaped - detector.mean
-            ) / detector.std
-            features_numpy = features_normalized.reshape(
-                -1, detector.feature_resolution * detector.feature_resolution * 10
-            )
+        if len(batch_features) == 0:
+            continue
 
-            features_tensor = (
-                torch.from_numpy(features_numpy).float().to(detector.device)
-            )
+        features_numpy = np.array(batch_features)
+        features_numpy_reshaped = features_numpy.reshape(
+            -1, detector.feature_resolution, detector.feature_resolution, 10
+        )
+        features_normalized = (features_numpy_reshaped - detector.mean) / detector.std
+        features_numpy = features_normalized.reshape(
+            -1, detector.feature_resolution * detector.feature_resolution * 10
+        )
 
-            outputs = detector.classifier(features_tensor)
+        scores = detector.classifier.infer_batch(features_numpy)
 
-            probs = torch.softmax(outputs, dim=1)
-            scores = probs[:, 1].cpu().numpy()
+        # print(
+        #     f"Score distribution: min={scores.min()}, max={scores.max()}, mean={scores.mean()}"
+        # )
+        # print(f"Scores > 0.5: {(scores > 0.5).sum()} / {len(scores)}")
+        # print(f"Scores > 0.9: {(scores > 0.9).sum()} / {len(scores)}")
 
-            # print(
-            #     f"Score distribution: min={scores.min()}, max={scores.max()}, mean={scores.mean()}"
-            # )
-            # print(f"Scores > 0.5: {(scores > 0.5).sum()} / {len(scores)}")
-            # print(f"Scores > 0.9: {(scores > 0.9).sum()} / {len(scores)}")
+        for idx, (window, scale) in enumerate(batch_metadata):
+            score = scores[idx]
 
-            for idx, (window, scale) in enumerate(batch_metadata):
-                score = scores[idx]
+            if score > score_threshold:
+                x, y, win_w, win_h = window
 
-                if score > score_threshold:
-                    x, y, win_w, win_h = window
+                orig_x = int(x / scale)
+                orig_y = int(y / scale)
+                orig_w = int(win_w / scale)
+                orig_h = int(win_h / scale)
 
-                    orig_x = int(x / scale)
-                    orig_y = int(y / scale)
-                    orig_w = int(win_w / scale)
-                    orig_h = int(win_h / scale)
-
-                    all_boxes.append([orig_x, orig_y, orig_w, orig_h])
-                    all_scores.append(float(score))
+                all_boxes.append([orig_x, orig_y, orig_w, orig_h])
+                all_scores.append(float(score))
 
     if len(all_boxes) > 0:
         keep_indices = non_max_suppression(all_boxes, all_scores, nms_threshold)

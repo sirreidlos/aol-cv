@@ -3,6 +3,9 @@ import cv2
 from typing import List, Tuple
 from scipy.ndimage import gaussian_filter
 
+cv2.setNumThreads(16)
+cv2.ocl.setUseOpenCL(False)
+
 
 def compute_channels(image: np.ndarray) -> np.ndarray:
     """
@@ -16,9 +19,35 @@ def compute_channels(image: np.ndarray) -> np.ndarray:
     gy = cv2.Sobel(L, cv2.CV_32F, 0, 1, ksize=1)
 
     magnitude = np.sqrt(gx**2 + gy**2)
-    orientation = np.arctan2(gy, gx)
+
+    # gx_r = cv2.Sobel(image[..., 0], cv2.CV_32F, 1, 0, ksize=1)
+    # gy_r = cv2.Sobel(image[..., 0], cv2.CV_32F, 0, 1, ksize=1)
+
+    # gx_g = cv2.Sobel(image[..., 1], cv2.CV_32F, 1, 0, ksize=1)
+    # gy_g = cv2.Sobel(image[..., 1], cv2.CV_32F, 0, 1, ksize=1)
+
+    # gx_b = cv2.Sobel(image[..., 2], cv2.CV_32F, 1, 0, ksize=1)
+    # gy_b = cv2.Sobel(image[..., 2], cv2.CV_32F, 0, 1, ksize=1)
+
+    # mag_r = np.sqrt(gx_r**2 + gy_r**2)
+    # mag_g = np.sqrt(gx_g**2 + gy_g**2)
+    # mag_b = np.sqrt(gx_b**2 + gy_b**2)
+
+    # magnitude = np.maximum(np.maximum(mag_r, mag_g), mag_b)
 
     num_bins = 6
+    orientation = np.arctan2(gy, gx)
+
+    # orientation = np.where(
+    #     (mag_r >= mag_g) & (mag_r >= mag_b),
+    #     np.arctan2(gy_r, gx_r),
+    #     np.where(
+    #         mag_g >= mag_b,
+    #         np.arctan2(gy_g, gx_g),
+    #         np.arctan2(gy_b, gx_b),
+    #     ),
+    # )
+
     orientation = np.mod(orientation, np.pi)
     bin_width = np.pi / num_bins
     hog_channels = []

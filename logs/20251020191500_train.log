@@ -1,0 +1,2034 @@
+✦ ❯ python train.py --annotation_file data/wider_face_split/wider_face_train_bbx_gt.txt --image_dir data/WIDER_train/images/ --val_annotation_file data/wider_face_split/wider_face_val_bbx_gt.txt --val_image_dir data/WIDER_val/images/ --max_images 4000 --max_val_images 1000 --hidden_sizes 1024 512 256 128 --epochs 20 --selection_metric "f1" --patience 5 --learning_rate 0.001 --bootstrap_rounds 10 --window_size 64 64 --num_mining_images 1000 --feature_resolution 16
+Initializing ACF detector...
+Configuration:
+  - Window size: [64, 64]
+  - Hidden layers: [1024, 512, 256, 128]
+  - Feature resolution: 16x16
+  - Feature vector size: 2560
+  - Learning rate: 0.001
+  - Batch size: 32
+  - Epochs: 20
+  - Selection Metric: f1
+  - Positive IoU: 0.5
+  - Negative IoU: 0.3
+  - Hard Negative IoU Range: (0.1, 0.3)
+  - Number of negatives per positive: 3
+
+Starting training...
+Loading annotations...
+Loading cached features from cache/train_4000_val_1000_res_16_win_64x64_pos0.5_neg0.3_hard0.1-0.3_ratio3.pkl...
+Using cached preprocessed features!
+Loaded 268020 training samples from cache
+Positive samples: 67005
+Negative samples: 201015
+Loaded 75704 validation samples from cache
+Positive validation samples: 18926
+Negative validation samples: 56778
+Any NaN: False
+Any Inf: False
+Memory freed after splitting train data
+
+Bootstrap Training Setup:
+  ├ Positive samples: 67005
+  ├ Initial negatives: 201015
+  └ Bootstrap rounds: 10
+
+Normalization stats computed from sample
+Normalizing 67005 positive samples...
+Initialized heap-based miner (capacity: 100000)
+Normalizing 75704 validation samples...
+
+============================================================
+Bootstrap Round 0/10
+============================================================
+Round 0: Using 201015 initial random negatives
+Training on 268020 samples (pos: 67005, neg: 201015)
+T ┬ Epoch 1/20: 100%|███████████████████████████████████████████| 8376/8376 [04:28<00:00, 31.23it/s]
+  ├ Train Loss: 0.3126, Train Accuracy: 88.78%
+  ├ Precision: 0.8597, Recall: 0.6586
+  ├ F1: 0.7458, F-beta: 0.8102
+  └ Pos accuracy: 65.86%, Neg accuracy: 96.42%
+V ┬ Epoch 1/20: 100%|██████████████████████████████████████████| 2366/2366 [00:06<00:00, 366.04it/s]
+  ├ Val Loss: 0.2871, Val Accuracy: 89.44%
+  ├ Precision: 0.8889, Recall: 0.6602
+  ├ F1: 0.7577, F-beta: 0.8313 mAP: 0.8671
+  └ Pos accuracy: 66.02%, Neg accuracy: 97.25%
+  → New best f1: 0.7577
+
+T ┬ Epoch 2/20: 100%|███████████████████████████████████████████| 8376/8376 [05:14<00:00, 26.65it/s]
+  ├ Train Loss: 0.2846, Train Accuracy: 90.35%
+  ├ Precision: 0.8898, Recall: 0.7006
+  ├ F1: 0.7839, F-beta: 0.8442
+  └ Pos accuracy: 70.06%, Neg accuracy: 97.11%
+V ┬ Epoch 2/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 561.75it/s]
+  ├ Val Loss: 0.2690, Val Accuracy: 89.96%
+  ├ Precision: 0.8974, Recall: 0.6759
+  ├ F1: 0.7710, F-beta: 0.8422 mAP: 0.8805
+  └ Pos accuracy: 67.59%, Neg accuracy: 97.42%
+  → New best f1: 0.7710
+
+T ┬ Epoch 3/20: 100%|███████████████████████████████████████████| 8376/8376 [05:08<00:00, 27.12it/s]
+  ├ Train Loss: 0.2717, Train Accuracy: 90.97%
+  ├ Precision: 0.9012, Recall: 0.7174
+  ├ F1: 0.7989, F-beta: 0.8573
+  └ Pos accuracy: 71.74%, Neg accuracy: 97.38%
+V ┬ Epoch 3/20: 100%|██████████████████████████████████████████| 2366/2366 [00:06<00:00, 377.64it/s]
+  ├ Val Loss: 0.2698, Val Accuracy: 89.88%
+  ├ Precision: 0.9249, Recall: 0.6479
+  ├ F1: 0.7620, F-beta: 0.8520 mAP: 0.8860
+  └ Pos accuracy: 64.79%, Neg accuracy: 98.25%
+  → No improvement for 1 epoch(s)
+
+T ┬ Epoch 4/20: 100%|███████████████████████████████████████████| 8376/8376 [05:25<00:00, 25.75it/s]
+  ├ Train Loss: 0.2622, Train Accuracy: 91.52%
+  ├ Precision: 0.9157, Recall: 0.7276
+  ├ F1: 0.8109, F-beta: 0.8707
+  └ Pos accuracy: 72.76%, Neg accuracy: 97.77%
+V ┬ Epoch 4/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 535.41it/s]
+  ├ Val Loss: 0.2593, Val Accuracy: 90.26%
+  ├ Precision: 0.9097, Recall: 0.6777
+  ├ F1: 0.7768, F-beta: 0.8514 mAP: 0.8881
+  └ Pos accuracy: 67.77%, Neg accuracy: 97.76%
+  → New best f1: 0.7768
+
+T ┬ Epoch 5/20: 100%|███████████████████████████████████████████| 8376/8376 [04:58<00:00, 28.04it/s]
+  ├ Train Loss: 0.2559, Train Accuracy: 91.92%
+  ├ Precision: 0.9274, Recall: 0.7343
+  ├ F1: 0.8196, F-beta: 0.8810
+  └ Pos accuracy: 73.43%, Neg accuracy: 98.08%
+V ┬ Epoch 5/20: 100%|██████████████████████████████████████████| 2366/2366 [00:06<00:00, 385.44it/s]
+  ├ Val Loss: 0.2685, Val Accuracy: 89.77%
+  ├ Precision: 0.9416, Recall: 0.6300
+  ├ F1: 0.7549, F-beta: 0.8569 mAP: 0.8828
+  └ Pos accuracy: 63.00%, Neg accuracy: 98.70%
+  → No improvement for 1 epoch(s)
+
+T ┬ Epoch 6/20: 100%|███████████████████████████████████████████| 8376/8376 [05:03<00:00, 27.64it/s]
+  ├ Train Loss: 0.2520, Train Accuracy: 92.23%
+  ├ Precision: 0.9303, Recall: 0.7449
+  ├ F1: 0.8273, F-beta: 0.8862
+  └ Pos accuracy: 74.49%, Neg accuracy: 98.14%
+V ┬ Epoch 6/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 536.42it/s]
+  ├ Val Loss: 0.2776, Val Accuracy: 90.58%
+  ├ Precision: 0.9077, Recall: 0.6939
+  ├ F1: 0.7865, F-beta: 0.8550 mAP: 0.8891
+  └ Pos accuracy: 69.39%, Neg accuracy: 97.65%
+  → New best f1: 0.7865
+
+T ┬ Epoch 7/20: 100%|███████████████████████████████████████████| 8376/8376 [05:46<00:00, 24.14it/s]
+  ├ Train Loss: 0.2491, Train Accuracy: 92.53%
+  ├ Precision: 0.9344, Recall: 0.7542
+  ├ F1: 0.8347, F-beta: 0.8918
+  └ Pos accuracy: 75.42%, Neg accuracy: 98.24%
+V ┬ Epoch 7/20: 100%|██████████████████████████████████████████| 2366/2366 [00:10<00:00, 224.30it/s]
+  ├ Val Loss: 0.3253, Val Accuracy: 90.84%
+  ├ Precision: 0.9119, Recall: 0.7014
+  ├ F1: 0.7929, F-beta: 0.8602 mAP: 0.8895
+  └ Pos accuracy: 70.14%, Neg accuracy: 97.74%
+  → New best f1: 0.7929
+
+T ┬ Epoch 8/20: 100%|███████████████████████████████████████████| 8376/8376 [05:29<00:00, 25.44it/s]
+  ├ Train Loss: 0.2436, Train Accuracy: 92.80%
+  ├ Precision: 0.9368, Recall: 0.7633
+  ├ F1: 0.8412, F-beta: 0.8961
+  └ Pos accuracy: 76.33%, Neg accuracy: 98.28%
+V ┬ Epoch 8/20: 100%|██████████████████████████████████████████| 2366/2366 [00:05<00:00, 471.94it/s]
+  ├ Val Loss: 0.2914, Val Accuracy: 90.51%
+  ├ Precision: 0.9213, Recall: 0.6783
+  ├ F1: 0.7813, F-beta: 0.8597 mAP: 0.8903
+  └ Pos accuracy: 67.83%, Neg accuracy: 98.07%
+  → No improvement for 1 epoch(s)
+
+T ┬ Epoch 9/20: 100%|███████████████████████████████████████████| 8376/8376 [06:15<00:00, 22.29it/s]
+  ├ Train Loss: 0.2437, Train Accuracy: 92.98%
+  ├ Precision: 0.9431, Recall: 0.7654
+  ├ F1: 0.8450, F-beta: 0.9013
+  └ Pos accuracy: 76.54%, Neg accuracy: 98.46%
+V ┬ Epoch 9/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 539.85it/s]
+  ├ Val Loss: 0.2952, Val Accuracy: 90.63%
+  ├ Precision: 0.9182, Recall: 0.6864
+  ├ F1: 0.7855, F-beta: 0.8601 mAP: 0.8877
+  └ Pos accuracy: 68.64%, Neg accuracy: 97.96%
+  → No improvement for 2 epoch(s)
+
+T ┬ Epoch 10/20: 100%|██████████████████████████████████████████| 8376/8376 [06:59<00:00, 19.99it/s]
+  ├ Train Loss: 0.2426, Train Accuracy: 93.21%
+  ├ Precision: 0.9463, Recall: 0.7721
+  ├ F1: 0.8504, F-beta: 0.9055
+  └ Pos accuracy: 77.21%, Neg accuracy: 98.54%
+V ┬ Epoch 10/20: 100%|█████████████████████████████████████████| 2366/2366 [00:05<00:00, 431.18it/s]
+  ├ Val Loss: 0.2620, Val Accuracy: 90.79%
+  ├ Precision: 0.9128, Recall: 0.6985
+  ├ F1: 0.7914, F-beta: 0.8600 mAP: 0.8903
+  └ Pos accuracy: 69.85%, Neg accuracy: 97.78%
+  → No improvement for 3 epoch(s)
+
+T ┬ Epoch 11/20: 100%|██████████████████████████████████████████| 8376/8376 [07:26<00:00, 18.77it/s]
+  ├ Train Loss: 0.2358, Train Accuracy: 93.39%
+  ├ Precision: 0.9477, Recall: 0.7784
+  ├ F1: 0.8547, F-beta: 0.9082
+  └ Pos accuracy: 77.84%, Neg accuracy: 98.57%
+V ┬ Epoch 11/20: 100%|█████████████████████████████████████████| 2366/2366 [00:04<00:00, 502.18it/s]
+  ├ Val Loss: 0.3393, Val Accuracy: 90.84%
+  ├ Precision: 0.9101, Recall: 0.7030
+  ├ F1: 0.7933, F-beta: 0.8595 mAP: 0.8901
+  └ Pos accuracy: 70.30%, Neg accuracy: 97.69%
+  → New best f1: 0.7933
+
+T ┬ Epoch 12/20: 100%|██████████████████████████████████████████| 8376/8376 [07:07<00:00, 19.59it/s]
+  ├ Train Loss: 0.2364, Train Accuracy: 93.56%
+  ├ Precision: 0.9445, Recall: 0.7889
+  ├ F1: 0.8597, F-beta: 0.9087
+  └ Pos accuracy: 78.89%, Neg accuracy: 98.46%
+V ┬ Epoch 12/20: 100%|█████████████████████████████████████████| 2366/2366 [00:04<00:00, 510.07it/s]
+  ├ Val Loss: 0.3346, Val Accuracy: 91.05%
+  ├ Precision: 0.8983, Recall: 0.7241
+  ├ F1: 0.8018, F-beta: 0.8570 mAP: 0.8906
+  └ Pos accuracy: 72.41%, Neg accuracy: 97.27%
+  → New best f1: 0.8018
+
+T ┬ Epoch 13/20: 100%|██████████████████████████████████████████| 8376/8376 [07:37<00:00, 18.32it/s]
+  ├ Train Loss: 0.2359, Train Accuracy: 93.72%
+  ├ Precision: 0.9465, Recall: 0.7935
+  ├ F1: 0.8633, F-beta: 0.9113
+  └ Pos accuracy: 79.35%, Neg accuracy: 98.50%
+V ┬ Epoch 13/20: 100%|█████████████████████████████████████████| 2366/2366 [00:08<00:00, 279.88it/s]
+  ├ Val Loss: 0.3685, Val Accuracy: 91.12%
+  ├ Precision: 0.8875, Recall: 0.7385
+  ├ F1: 0.8062, F-beta: 0.8531 mAP: 0.8855
+  └ Pos accuracy: 73.85%, Neg accuracy: 96.88%
+  → New best f1: 0.8062
+
+T ┬ Epoch 14/20: 100%|██████████████████████████████████████████| 8376/8376 [07:54<00:00, 17.67it/s]
+  ├ Train Loss: 0.2337, Train Accuracy: 93.96%
+  ├ Precision: 0.9520, Recall: 0.7986
+  ├ F1: 0.8686, F-beta: 0.9168
+  └ Pos accuracy: 79.86%, Neg accuracy: 98.66%
+V ┬ Epoch 14/20: 100%|█████████████████████████████████████████| 2366/2366 [00:04<00:00, 505.79it/s]
+  ├ Val Loss: 0.3356, Val Accuracy: 91.05%
+  ├ Precision: 0.8853, Recall: 0.7378
+  ├ F1: 0.8048, F-beta: 0.8513 mAP: 0.8881
+  └ Pos accuracy: 73.78%, Neg accuracy: 96.81%
+  → No improvement for 1 epoch(s)
+
+T ┬ Epoch 15/20: 100%|██████████████████████████████████████████| 8376/8376 [07:30<00:00, 18.59it/s]
+  ├ Train Loss: 0.2288, Train Accuracy: 94.08%
+  ├ Precision: 0.9530, Recall: 0.8028
+  ├ F1: 0.8715, F-beta: 0.9186
+  └ Pos accuracy: 80.28%, Neg accuracy: 98.68%
+V ┬ Epoch 15/20: 100%|█████████████████████████████████████████| 2366/2366 [00:08<00:00, 271.46it/s]
+  ├ Val Loss: 0.5684, Val Accuracy: 91.01%
+  ├ Precision: 0.9078, Recall: 0.7128
+  ├ F1: 0.7986, F-beta: 0.8607 mAP: 0.8864
+  └ Pos accuracy: 71.28%, Neg accuracy: 97.59%
+  → No improvement for 2 epoch(s)
+
+T ┬ Epoch 16/20: 100%|██████████████████████████████████████████| 8376/8376 [07:08<00:00, 19.55it/s]
+  ├ Train Loss: 0.2330, Train Accuracy: 94.19%
+  ├ Precision: 0.9545, Recall: 0.8059
+  ├ F1: 0.8739, F-beta: 0.9205
+  └ Pos accuracy: 80.59%, Neg accuracy: 98.72%
+V ┬ Epoch 16/20: 100%|█████████████████████████████████████████| 2366/2366 [00:06<00:00, 383.08it/s]
+  ├ Val Loss: 0.4543, Val Accuracy: 91.01%
+  ├ Precision: 0.9140, Recall: 0.7068
+  ├ F1: 0.7971, F-beta: 0.8633 mAP: 0.8881
+  └ Pos accuracy: 70.68%, Neg accuracy: 97.78%
+  → No improvement for 3 epoch(s)
+
+T ┬ Epoch 17/20: 100%|██████████████████████████████████████████| 8376/8376 [07:09<00:00, 19.50it/s]
+  ├ Train Loss: 0.2283, Train Accuracy: 94.38%
+  ├ Precision: 0.9536, Recall: 0.8147
+  ├ F1: 0.8787, F-beta: 0.9221
+  └ Pos accuracy: 81.47%, Neg accuracy: 98.68%
+V ┬ Epoch 17/20: 100%|█████████████████████████████████████████| 2366/2366 [00:04<00:00, 494.65it/s]
+  ├ Val Loss: 0.6137, Val Accuracy: 91.06%
+  ├ Precision: 0.8970, Recall: 0.7259
+  ├ F1: 0.8024, F-beta: 0.8566 mAP: 0.8879
+  └ Pos accuracy: 72.59%, Neg accuracy: 97.22%
+  → No improvement for 4 epoch(s)
+
+T ┬ Epoch 18/20: 100%|██████████████████████████████████████████| 8376/8376 [07:31<00:00, 18.57it/s]
+  ├ Train Loss: 0.2285, Train Accuracy: 94.46%
+  ├ Precision: 0.9533, Recall: 0.8187
+  ├ F1: 0.8809, F-beta: 0.9230
+  └ Pos accuracy: 81.87%, Neg accuracy: 98.66%
+V ┬ Epoch 18/20: 100%|█████████████████████████████████████████| 2366/2366 [00:06<00:00, 368.63it/s]
+  ├ Val Loss: 0.3332, Val Accuracy: 91.14%
+  ├ Precision: 0.9093, Recall: 0.7172
+  ├ F1: 0.8019, F-beta: 0.8631 mAP: 0.8887
+  └ Pos accuracy: 71.72%, Neg accuracy: 97.62%
+  → No improvement for 5 epoch(s)
+
+Early stopping at epoch 18
+Restored best model from round 0 (f1=0.8062)
+★ New overall best! f1=0.8062
+
+============================================================
+Bootstrap Round 1/10
+============================================================
+
+============================================================
+Mining hard negatives from 1000 images...
+Score threshold: 0.0000
+============================================================
+Mining hard negatives: 100%|████████████████████████████████████| 1000/1000 [03:45<00:00,  4.44it/s]
+Mined 50000 candidates, heap contains 0 hardest
+
+  Before merge:
+  ├ Main heap: 0 hard negatives
+  └ New candidates: 50000
+
+  First mining round: promoting candidates to main heap...
+      ✓ Promoted 50000 negatives to main heap
+      Score range: [0.0000, 1.0000], mean: 0.0659
+  Training with 50000 mined + 67005 initial negatives
+  Pos:Neg ratio: 1:1.7
+Training on 184010 samples (pos: 67005, neg: 117005)
+Continuing from previous round's weights...
+T ┬ Epoch 1/20: 100%|███████████████████████████████████████████| 5751/5751 [03:17<00:00, 29.11it/s]
+  ├ Train Loss: 0.2905, Train Accuracy: 92.83%
+  ├ Precision: 0.9466, Recall: 0.8509
+  ├ F1: 0.8962, F-beta: 0.9258
+  └ Pos accuracy: 85.09%, Neg accuracy: 97.25%
+V ┬ Epoch 1/20: 100%|██████████████████████████████████████████| 2366/2366 [00:06<00:00, 348.23it/s]
+  ├ Val Loss: 0.3906, Val Accuracy: 91.15%
+  ├ Precision: 0.8946, Recall: 0.7322
+  ├ F1: 0.8053, F-beta: 0.8566 mAP: 0.8900
+  └ Pos accuracy: 73.22%, Neg accuracy: 97.12%
+  → New best f1: 0.8053
+
+T ┬ Epoch 2/20: 100%|███████████████████████████████████████████| 5751/5751 [02:43<00:00, 35.23it/s]
+  ├ Train Loss: 0.2552, Train Accuracy: 93.20%
+  ├ Precision: 0.9503, Recall: 0.8581
+  ├ F1: 0.9018, F-beta: 0.9303
+  └ Pos accuracy: 85.81%, Neg accuracy: 97.43%
+V ┬ Epoch 2/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 549.32it/s]
+  ├ Val Loss: 0.3904, Val Accuracy: 90.16%
+  ├ Precision: 0.7986, Recall: 0.8108
+  ├ F1: 0.8047, F-beta: 0.8011 mAP: 0.8868
+  └ Pos accuracy: 81.08%, Neg accuracy: 93.19%
+  → No improvement for 1 epoch(s)
+
+T ┬ Epoch 3/20: 100%|███████████████████████████████████████████| 5751/5751 [03:08<00:00, 30.47it/s]
+  ├ Train Loss: 0.2465, Train Accuracy: 93.36%
+  ├ Precision: 0.9507, Recall: 0.8622
+  ├ F1: 0.9043, F-beta: 0.9316
+  └ Pos accuracy: 86.22%, Neg accuracy: 97.44%
+V ┬ Epoch 3/20: 100%|██████████████████████████████████████████| 2366/2366 [00:11<00:00, 212.50it/s]
+  ├ Val Loss: 0.4200, Val Accuracy: 91.17%
+  ├ Precision: 0.8691, Recall: 0.7613
+  ├ F1: 0.8116, F-beta: 0.8451 mAP: 0.8872
+  └ Pos accuracy: 76.13%, Neg accuracy: 96.18%
+  → New best f1: 0.8116
+
+T ┬ Epoch 4/20: 100%|███████████████████████████████████████████| 5751/5751 [02:54<00:00, 32.93it/s]
+  ├ Train Loss: 0.2456, Train Accuracy: 93.68%
+  ├ Precision: 0.9527, Recall: 0.8695
+  ├ F1: 0.9092, F-beta: 0.9348
+  └ Pos accuracy: 86.95%, Neg accuracy: 97.53%
+V ┬ Epoch 4/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 546.58it/s]
+  ├ Val Loss: 0.5146, Val Accuracy: 91.19%
+  ├ Precision: 0.8685, Recall: 0.7632
+  ├ F1: 0.8125, F-beta: 0.8452 mAP: 0.8899
+  └ Pos accuracy: 76.32%, Neg accuracy: 96.15%
+  → New best f1: 0.8125
+
+T ┬ Epoch 5/20: 100%|███████████████████████████████████████████| 5751/5751 [03:10<00:00, 30.13it/s]
+  ├ Train Loss: 0.2387, Train Accuracy: 93.78%
+  ├ Precision: 0.9537, Recall: 0.8714
+  ├ F1: 0.9107, F-beta: 0.9360
+  └ Pos accuracy: 87.14%, Neg accuracy: 97.58%
+V ┬ Epoch 5/20: 100%|██████████████████████████████████████████| 2366/2366 [00:06<00:00, 350.18it/s]
+  ├ Val Loss: 0.4626, Val Accuracy: 89.04%
+  ├ Precision: 0.7600, Recall: 0.8211
+  ├ F1: 0.7894, F-beta: 0.7714 mAP: 0.8744
+  └ Pos accuracy: 82.11%, Neg accuracy: 91.35%
+  → No improvement for 1 epoch(s)
+
+T ┬ Epoch 6/20: 100%|███████████████████████████████████████████| 5751/5751 [03:26<00:00, 27.88it/s]
+  ├ Train Loss: 0.2405, Train Accuracy: 94.00%
+  ├ Precision: 0.9538, Recall: 0.8777
+  ├ F1: 0.9141, F-beta: 0.9375
+  └ Pos accuracy: 87.77%, Neg accuracy: 97.56%
+V ┬ Epoch 6/20: 100%|██████████████████████████████████████████| 2366/2366 [00:07<00:00, 310.81it/s]
+  ├ Val Loss: 0.4460, Val Accuracy: 90.93%
+  ├ Precision: 0.8397, Recall: 0.7874
+  ├ F1: 0.8127, F-beta: 0.8287 mAP: 0.8859
+  └ Pos accuracy: 78.74%, Neg accuracy: 94.99%
+  → New best f1: 0.8127
+
+T ┬ Epoch 7/20: 100%|███████████████████████████████████████████| 5751/5751 [03:24<00:00, 28.18it/s]
+  ├ Train Loss: 0.2319, Train Accuracy: 94.26%
+  ├ Precision: 0.9584, Recall: 0.8806
+  ├ F1: 0.9178, F-beta: 0.9417
+  └ Pos accuracy: 88.06%, Neg accuracy: 97.81%
+V ┬ Epoch 7/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 558.15it/s]
+  ├ Val Loss: 0.4754, Val Accuracy: 89.33%
+  ├ Precision: 0.7741, Recall: 0.8097
+  ├ F1: 0.7915, F-beta: 0.7810 mAP: 0.8744
+  └ Pos accuracy: 80.97%, Neg accuracy: 92.12%
+  → No improvement for 1 epoch(s)
+
+T ┬ Epoch 8/20: 100%|███████████████████████████████████████████| 5751/5751 [03:27<00:00, 27.66it/s]
+  ├ Train Loss: 0.2307, Train Accuracy: 94.57%
+  ├ Precision: 0.9616, Recall: 0.8864
+  ├ F1: 0.9225, F-beta: 0.9455
+  └ Pos accuracy: 88.64%, Neg accuracy: 97.97%
+V ┬ Epoch 8/20: 100%|██████████████████████████████████████████| 2366/2366 [00:09<00:00, 248.58it/s]
+  ├ Val Loss: 1.2269, Val Accuracy: 90.74%
+  ├ Precision: 0.8275, Recall: 0.7953
+  ├ F1: 0.8110, F-beta: 0.8208 mAP: 0.8744
+  └ Pos accuracy: 79.53%, Neg accuracy: 94.47%
+  → No improvement for 2 epoch(s)
+
+T ┬ Epoch 9/20: 100%|███████████████████████████████████████████| 5751/5751 [03:27<00:00, 27.72it/s]
+  ├ Train Loss: 0.2299, Train Accuracy: 94.74%
+  ├ Precision: 0.9623, Recall: 0.8905
+  ├ F1: 0.9250, F-beta: 0.9470
+  └ Pos accuracy: 89.05%, Neg accuracy: 98.00%
+V ┬ Epoch 9/20: 100%|██████████████████████████████████████████| 2366/2366 [00:05<00:00, 448.09it/s]
+  ├ Val Loss: 0.9062, Val Accuracy: 91.10%
+  ├ Precision: 0.8697, Recall: 0.7574
+  ├ F1: 0.8097, F-beta: 0.8447 mAP: 0.8758
+  └ Pos accuracy: 75.74%, Neg accuracy: 96.22%
+  → No improvement for 3 epoch(s)
+
+T ┬ Epoch 10/20: 100%|██████████████████████████████████████████| 5751/5751 [03:28<00:00, 27.54it/s]
+  ├ Train Loss: 0.2287, Train Accuracy: 94.85%
+  ├ Precision: 0.9554, Recall: 0.9005
+  ├ F1: 0.9271, F-beta: 0.9439
+  └ Pos accuracy: 90.05%, Neg accuracy: 97.59%
+V ┬ Epoch 10/20: 100%|█████████████████████████████████████████| 2366/2366 [00:04<00:00, 552.00it/s]
+  ├ Val Loss: 0.8916, Val Accuracy: 89.77%
+  ├ Precision: 0.7812, Recall: 0.8206
+  ├ F1: 0.8004, F-beta: 0.7888 mAP: 0.8659
+  └ Pos accuracy: 82.06%, Neg accuracy: 92.34%
+  → No improvement for 4 epoch(s)
+
+T ┬ Epoch 11/20: 100%|██████████████████████████████████████████| 5751/5751 [03:51<00:00, 24.89it/s]
+  ├ Train Loss: 0.2205, Train Accuracy: 94.96%
+  ├ Precision: 0.9610, Recall: 0.8980
+  ├ F1: 0.9285, F-beta: 0.9477
+  └ Pos accuracy: 89.80%, Neg accuracy: 97.91%
+V ┬ Epoch 11/20: 100%|█████████████████████████████████████████| 2366/2366 [00:04<00:00, 547.99it/s]
+  ├ Val Loss: 0.8816, Val Accuracy: 91.05%
+  ├ Precision: 0.8631, Recall: 0.7629
+  ├ F1: 0.8099, F-beta: 0.8410 mAP: 0.8772
+  └ Pos accuracy: 76.29%, Neg accuracy: 95.97%
+  → No improvement for 5 epoch(s)
+
+Early stopping at epoch 11
+Restored best model from round 1 (f1=0.8127)
+★ New overall best! f1=0.8127
+
+============================================================
+Bootstrap Round 2/10
+============================================================
+
+============================================================
+Mining hard negatives from 1000 images...
+Score threshold: 0.0000
+============================================================
+Mining hard negatives: 100%|████████████████████████████████████| 1000/1000 [03:32<00:00,  4.71it/s]
+Mined 50000 candidates, heap contains 50000 hardest
+
+  Before merge:
+  ├ Main heap: 50000 hard negatives
+  └ New candidates: 50000
+      Main heap score range: [0.0000, 1.0000]
+
+  🔄 Re-scoring existing negatives with current model...
+  Re-scoring 50000 existing negatives...
+    └ Average score decrease: 0.0659
+  Merging 50000 new candidates...
+  ✓ Final heap: 100000 negatives
+    Score range: [0.0000, 1.0000], mean: 0.0181
+  Training with 100000 mined + 67005 initial negatives
+  Pos:Neg ratio: 1:2.5
+Training on 234010 samples (pos: 67005, neg: 167005)
+Continuing from previous round's weights...
+T ┬ Epoch 1/20: 100%|███████████████████████████████████████████| 7313/7313 [04:25<00:00, 27.52it/s]
+  ├ Train Loss: 0.2500, Train Accuracy: 94.86%
+  ├ Precision: 0.9466, Recall: 0.8694
+  ├ F1: 0.9064, F-beta: 0.9301
+  └ Pos accuracy: 86.94%, Neg accuracy: 98.03%
+V ┬ Epoch 1/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 523.08it/s]
+  ├ Val Loss: 0.4963, Val Accuracy: 90.81%
+  ├ Precision: 0.8863, Recall: 0.7254
+  ├ F1: 0.7978, F-beta: 0.8486 mAP: 0.8878
+  └ Pos accuracy: 72.54%, Neg accuracy: 96.90%
+  → New best f1: 0.7978
+
+T ┬ Epoch 2/20: 100%|███████████████████████████████████████████| 7313/7313 [04:39<00:00, 26.20it/s]
+  ├ Train Loss: 0.2338, Train Accuracy: 94.96%
+  ├ Precision: 0.9494, Recall: 0.8706
+  ├ F1: 0.9083, F-beta: 0.9325
+  └ Pos accuracy: 87.06%, Neg accuracy: 98.14%
+V ┬ Epoch 2/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 539.80it/s]
+  ├ Val Loss: 0.4570, Val Accuracy: 91.13%
+  ├ Precision: 0.8512, Recall: 0.7820
+  ├ F1: 0.8152, F-beta: 0.8364 mAP: 0.8922
+  └ Pos accuracy: 78.20%, Neg accuracy: 95.44%
+  → New best f1: 0.8152
+
+T ┬ Epoch 3/20: 100%|███████████████████████████████████████████| 7313/7313 [04:40<00:00, 26.10it/s]
+  ├ Train Loss: 0.2304, Train Accuracy: 95.13%
+  ├ Precision: 0.9538, Recall: 0.8723
+  ├ F1: 0.9112, F-beta: 0.9363
+  └ Pos accuracy: 87.23%, Neg accuracy: 98.30%
+V ┬ Epoch 3/20: 100%|██████████████████████████████████████████| 2366/2366 [00:10<00:00, 215.80it/s]
+  ├ Val Loss: 0.5876, Val Accuracy: 91.21%
+  ├ Precision: 0.8748, Recall: 0.7568
+  ├ F1: 0.8115, F-beta: 0.8484 mAP: 0.8892
+  └ Pos accuracy: 75.68%, Neg accuracy: 96.39%
+  → No improvement for 1 epoch(s)
+
+T ┬ Epoch 4/20: 100%|███████████████████████████████████████████| 7313/7313 [04:53<00:00, 24.95it/s]
+  ├ Train Loss: 0.2246, Train Accuracy: 95.36%
+  ├ Precision: 0.9491, Recall: 0.8854
+  ├ F1: 0.9161, F-beta: 0.9356
+  └ Pos accuracy: 88.54%, Neg accuracy: 98.10%
+V ┬ Epoch 4/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 550.46it/s]
+  ├ Val Loss: 0.8650, Val Accuracy: 91.15%
+  ├ Precision: 0.8555, Recall: 0.7773
+  ├ F1: 0.8145, F-beta: 0.8386 mAP: 0.8836
+  └ Pos accuracy: 77.73%, Neg accuracy: 95.62%
+  → No improvement for 2 epoch(s)
+
+T ┬ Epoch 5/20: 100%|███████████████████████████████████████████| 7313/7313 [04:54<00:00, 24.82it/s]
+  ├ Train Loss: 0.2197, Train Accuracy: 95.54%
+  ├ Precision: 0.9555, Recall: 0.8853
+  ├ F1: 0.9191, F-beta: 0.9406
+  └ Pos accuracy: 88.53%, Neg accuracy: 98.35%
+V ┬ Epoch 5/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 557.14it/s]
+  ├ Val Loss: 0.4707, Val Accuracy: 91.07%
+  ├ Precision: 0.8615, Recall: 0.7661
+  ├ F1: 0.8110, F-beta: 0.8405 mAP: 0.8871
+  └ Pos accuracy: 76.61%, Neg accuracy: 95.89%
+  → No improvement for 3 epoch(s)
+
+T ┬ Epoch 6/20: 100%|███████████████████████████████████████████| 7313/7313 [04:57<00:00, 24.60it/s]
+  ├ Train Loss: 0.2226, Train Accuracy: 95.64%
+  ├ Precision: 0.9601, Recall: 0.8846
+  ├ F1: 0.9208, F-beta: 0.9440
+  └ Pos accuracy: 88.46%, Neg accuracy: 98.53%
+V ┬ Epoch 6/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 549.04it/s]
+  ├ Val Loss: 0.5048, Val Accuracy: 91.16%
+  ├ Precision: 0.8661, Recall: 0.7646
+  ├ F1: 0.8122, F-beta: 0.8437 mAP: 0.8830
+  └ Pos accuracy: 76.46%, Neg accuracy: 96.06%
+  → No improvement for 4 epoch(s)
+
+T ┬ Epoch 7/20: 100%|███████████████████████████████████████████| 7313/7313 [05:20<00:00, 22.79it/s]
+  ├ Train Loss: 0.2148, Train Accuracy: 95.80%
+  ├ Precision: 0.9606, Recall: 0.8896
+  ├ F1: 0.9238, F-beta: 0.9455
+  └ Pos accuracy: 88.96%, Neg accuracy: 98.54%
+V ┬ Epoch 7/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 555.40it/s]
+  ├ Val Loss: 0.7797, Val Accuracy: 90.10%
+  ├ Precision: 0.8010, Recall: 0.8036
+  ├ F1: 0.8023, F-beta: 0.8015 mAP: 0.8709
+  └ Pos accuracy: 80.36%, Neg accuracy: 93.35%
+  → No improvement for 5 epoch(s)
+
+Early stopping at epoch 7
+Restored best model from round 2 (f1=0.8152)
+★ New overall best! f1=0.8152
+
+============================================================
+Bootstrap Round 3/10
+============================================================
+
+============================================================
+Mining hard negatives from 1000 images...
+Score threshold: 0.0000
+============================================================
+Mining hard negatives: 100%|████████████████████████████████████| 1000/1000 [03:30<00:00,  4.75it/s]
+Mined 50000 candidates, heap contains 100000 hardest
+
+  Before merge:
+  ├ Main heap: 100000 hard negatives
+  └ New candidates: 50000
+      Main heap score range: [0.0000, 1.0000]
+
+  🔄 Re-scoring existing negatives with current model...
+  Re-scoring 100000 existing negatives...
+    └ Average score decrease: 0.0181
+  Merging 50000 new candidates...
+    └ Dropping 50000 negatives that are too easy
+  ✓ Final heap: 100000 negatives
+    Score range: [0.0000, 1.0000], mean: 0.0153
+  Training with 100000 mined + 67005 initial negatives
+  Pos:Neg ratio: 1:2.5
+Training on 234010 samples (pos: 67005, neg: 167005)
+Continuing from previous round's weights...
+T ┬ Epoch 1/20: 100%|███████████████████████████████████████████| 7313/7313 [04:51<00:00, 25.05it/s]
+  ├ Train Loss: 0.2482, Train Accuracy: 95.29%
+  ├ Precision: 0.9524, Recall: 0.8794
+  ├ F1: 0.9144, F-beta: 0.9368
+  └ Pos accuracy: 87.94%, Neg accuracy: 98.24%
+V ┬ Epoch 1/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 517.75it/s]
+  ├ Val Loss: 0.4132, Val Accuracy: 91.22%
+  ├ Precision: 0.8688, Recall: 0.7641
+  ├ F1: 0.8131, F-beta: 0.8457 mAP: 0.8892
+  └ Pos accuracy: 76.41%, Neg accuracy: 96.16%
+  → New best f1: 0.8131
+
+T ┬ Epoch 2/20: 100%|███████████████████████████████████████████| 7313/7313 [04:52<00:00, 24.98it/s]
+  ├ Train Loss: 0.2241, Train Accuracy: 95.41%
+  ├ Precision: 0.9517, Recall: 0.8846
+  ├ F1: 0.9169, F-beta: 0.9374
+  └ Pos accuracy: 88.46%, Neg accuracy: 98.20%
+V ┬ Epoch 2/20: 100%|██████████████████████████████████████████| 2366/2366 [00:11<00:00, 204.35it/s]
+  ├ Val Loss: 0.7684, Val Accuracy: 91.03%
+  ├ Precision: 0.8474, Recall: 0.7819
+  ├ F1: 0.8134, F-beta: 0.8334 mAP: 0.8773
+  └ Pos accuracy: 78.19%, Neg accuracy: 95.31%
+  → New best f1: 0.8134
+
+T ┬ Epoch 3/20: 100%|███████████████████████████████████████████| 7313/7313 [05:22<00:00, 22.66it/s]
+  ├ Train Loss: 0.2301, Train Accuracy: 95.58%
+  ├ Precision: 0.9480, Recall: 0.8948
+  ├ F1: 0.9206, F-beta: 0.9368
+  └ Pos accuracy: 89.48%, Neg accuracy: 98.03%
+V ┬ Epoch 3/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 507.54it/s]
+  ├ Val Loss: 0.9800, Val Accuracy: 91.11%
+  ├ Precision: 0.8650, Recall: 0.7637
+  ├ F1: 0.8112, F-beta: 0.8426 mAP: 0.8848
+  └ Pos accuracy: 76.37%, Neg accuracy: 96.03%
+  → No improvement for 1 epoch(s)
+
+T ┬ Epoch 4/20: 100%|███████████████████████████████████████████| 7313/7313 [05:22<00:00, 22.67it/s]
+  ├ Train Loss: 0.2219, Train Accuracy: 95.84%
+  ├ Precision: 0.9480, Recall: 0.9042
+  ├ F1: 0.9256, F-beta: 0.9389
+  └ Pos accuracy: 90.42%, Neg accuracy: 98.01%
+V ┬ Epoch 4/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 549.52it/s]
+  ├ Val Loss: 0.6678, Val Accuracy: 91.23%
+  ├ Precision: 0.8723, Recall: 0.7607
+  ├ F1: 0.8127, F-beta: 0.8475 mAP: 0.8869
+  └ Pos accuracy: 76.07%, Neg accuracy: 96.29%
+  → No improvement for 2 epoch(s)
+
+T ┬ Epoch 5/20: 100%|███████████████████████████████████████████| 7313/7313 [05:30<00:00, 22.14it/s]
+  ├ Train Loss: 0.2241, Train Accuracy: 95.84%
+  ├ Precision: 0.9510, Recall: 0.9012
+  ├ F1: 0.9254, F-beta: 0.9406
+  └ Pos accuracy: 90.12%, Neg accuracy: 98.14%
+V ┬ Epoch 5/20: 100%|██████████████████████████████████████████| 2366/2366 [00:05<00:00, 410.51it/s]
+  ├ Val Loss: 0.9854, Val Accuracy: 91.11%
+  ├ Precision: 0.8710, Recall: 0.7566
+  ├ F1: 0.8098, F-beta: 0.8455 mAP: 0.8862
+  └ Pos accuracy: 75.66%, Neg accuracy: 96.27%
+  → No improvement for 3 epoch(s)
+
+T ┬ Epoch 6/20: 100%|███████████████████████████████████████████| 7313/7313 [05:47<00:00, 21.07it/s]
+  ├ Train Loss: 0.2220, Train Accuracy: 96.05%
+  ├ Precision: 0.9606, Recall: 0.8988
+  ├ F1: 0.9287, F-beta: 0.9476
+  └ Pos accuracy: 89.88%, Neg accuracy: 98.52%
+V ┬ Epoch 6/20: 100%|██████████████████████████████████████████| 2366/2366 [00:05<00:00, 462.31it/s]
+  ├ Val Loss: 0.7274, Val Accuracy: 91.06%
+  ├ Precision: 0.8546, Recall: 0.7743
+  ├ F1: 0.8125, F-beta: 0.8372 mAP: 0.8756
+  └ Pos accuracy: 77.43%, Neg accuracy: 95.61%
+  → No improvement for 4 epoch(s)
+
+T ┬ Epoch 7/20: 100%|███████████████████████████████████████████| 7313/7313 [05:40<00:00, 21.49it/s]
+  ├ Train Loss: 0.2178, Train Accuracy: 96.18%
+  ├ Precision: 0.9606, Recall: 0.9035
+  ├ F1: 0.9312, F-beta: 0.9486
+  └ Pos accuracy: 90.35%, Neg accuracy: 98.51%
+V ┬ Epoch 7/20: 100%|██████████████████████████████████████████| 2366/2366 [00:06<00:00, 345.62it/s]
+  ├ Val Loss: 0.6897, Val Accuracy: 90.16%
+  ├ Precision: 0.8077, Recall: 0.7960
+  ├ F1: 0.8018, F-beta: 0.8053 mAP: 0.8753
+  └ Pos accuracy: 79.60%, Neg accuracy: 93.68%
+  → No improvement for 5 epoch(s)
+
+Early stopping at epoch 7
+Restored best model from round 3 (f1=0.8134)
+
+============================================================
+Bootstrap Round 4/10
+============================================================
+
+============================================================
+Mining hard negatives from 1000 images...
+Score threshold: 0.0000
+============================================================
+Mining hard negatives: 100%|████████████████████████████████████| 1000/1000 [03:43<00:00,  4.48it/s]
+Mined 50000 candidates, heap contains 100000 hardest
+
+  Before merge:
+  ├ Main heap: 100000 hard negatives
+  └ New candidates: 50000
+      Main heap score range: [0.0000, 1.0000]
+
+  🔄 Re-scoring existing negatives with current model...
+  Re-scoring 100000 existing negatives...
+    └ Average score decrease: 0.0153
+  Merging 50000 new candidates...
+    └ Dropping 50000 negatives that are too easy
+  ✓ Final heap: 100000 negatives
+    Score range: [0.0000, 1.0000], mean: 0.0166
+  Training with 100000 mined + 67005 initial negatives
+  Pos:Neg ratio: 1:2.5
+Training on 234010 samples (pos: 67005, neg: 167005)
+Continuing from previous round's weights...
+T ┬ Epoch 1/20: 100%|███████████████████████████████████████████| 7313/7313 [05:31<00:00, 22.08it/s]
+  ├ Train Loss: 0.2415, Train Accuracy: 95.77%
+  ├ Precision: 0.9507, Recall: 0.8991
+  ├ F1: 0.9241, F-beta: 0.9399
+  └ Pos accuracy: 89.91%, Neg accuracy: 98.13%
+V ┬ Epoch 1/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 548.32it/s]
+  ├ Val Loss: 0.6273, Val Accuracy: 90.11%
+  ├ Precision: 0.8076, Recall: 0.7936
+  ├ F1: 0.8005, F-beta: 0.8047 mAP: 0.8834
+  └ Pos accuracy: 79.36%, Neg accuracy: 93.70%
+  → New best f1: 0.8005
+
+T ┬ Epoch 2/20: 100%|███████████████████████████████████████████| 7313/7313 [05:45<00:00, 21.19it/s]
+  ├ Train Loss: 0.2259, Train Accuracy: 95.94%
+  ├ Precision: 0.9517, Recall: 0.9042
+  ├ F1: 0.9274, F-beta: 0.9418
+  └ Pos accuracy: 90.42%, Neg accuracy: 98.16%
+V ┬ Epoch 2/20: 100%|██████████████████████████████████████████| 2366/2366 [00:07<00:00, 325.63it/s]
+  ├ Val Loss: 0.6886, Val Accuracy: 90.81%
+  ├ Precision: 0.8435, Recall: 0.7764
+  ├ F1: 0.8086, F-beta: 0.8292 mAP: 0.8839
+  └ Pos accuracy: 77.64%, Neg accuracy: 95.20%
+  → New best f1: 0.8086
+
+T ┬ Epoch 3/20: 100%|███████████████████████████████████████████| 7313/7313 [05:49<00:00, 20.92it/s]
+  ├ Train Loss: 0.2188, Train Accuracy: 96.08%
+  ├ Precision: 0.9551, Recall: 0.9056
+  ├ F1: 0.9297, F-beta: 0.9448
+  └ Pos accuracy: 90.56%, Neg accuracy: 98.29%
+V ┬ Epoch 3/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 526.04it/s]
+  ├ Val Loss: 0.8059, Val Accuracy: 91.19%
+  ├ Precision: 0.8844, Recall: 0.7452
+  ├ F1: 0.8089, F-beta: 0.8525 mAP: 0.8843
+  └ Pos accuracy: 74.52%, Neg accuracy: 96.75%
+  → New best f1: 0.8089
+
+T ┬ Epoch 4/20: 100%|███████████████████████████████████████████| 7313/7313 [06:00<00:00, 20.31it/s]
+  ├ Train Loss: 0.2038, Train Accuracy: 96.29%
+  ├ Precision: 0.9592, Recall: 0.9090
+  ├ F1: 0.9334, F-beta: 0.9487
+  └ Pos accuracy: 90.90%, Neg accuracy: 98.45%
+V ┬ Epoch 4/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 542.78it/s]
+  ├ Val Loss: 0.7346, Val Accuracy: 91.30%
+  ├ Precision: 0.8869, Recall: 0.7473
+  ├ F1: 0.8111, F-beta: 0.8550 mAP: 0.8840
+  └ Pos accuracy: 74.73%, Neg accuracy: 96.82%
+  → New best f1: 0.8111
+
+T ┬ Epoch 5/20: 100%|███████████████████████████████████████████| 7313/7313 [06:15<00:00, 19.46it/s]
+  ├ Train Loss: 0.2025, Train Accuracy: 96.47%
+  ├ Precision: 0.9607, Recall: 0.9142
+  ├ F1: 0.9369, F-beta: 0.9510
+  └ Pos accuracy: 91.42%, Neg accuracy: 98.50%
+V ┬ Epoch 5/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 534.51it/s]
+  ├ Val Loss: 0.8758, Val Accuracy: 91.06%
+  ├ Precision: 0.8716, Recall: 0.7534
+  ├ F1: 0.8082, F-beta: 0.8451 mAP: 0.8851
+  └ Pos accuracy: 75.34%, Neg accuracy: 96.30%
+  → No improvement for 1 epoch(s)
+
+T ┬ Epoch 6/20: 100%|███████████████████████████████████████████| 7313/7313 [06:26<00:00, 18.91it/s]
+  ├ Train Loss: 0.2169, Train Accuracy: 96.54%
+  ├ Precision: 0.9604, Recall: 0.9171
+  ├ F1: 0.9382, F-beta: 0.9514
+  └ Pos accuracy: 91.71%, Neg accuracy: 98.48%
+V ┬ Epoch 6/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 481.78it/s]
+  ├ Val Loss: 1.9236, Val Accuracy: 90.39%
+  ├ Precision: 0.8119, Recall: 0.8010
+  ├ F1: 0.8064, F-beta: 0.8097 mAP: 0.8706
+  └ Pos accuracy: 80.10%, Neg accuracy: 93.81%
+  → No improvement for 2 epoch(s)
+
+T ┬ Epoch 7/20: 100%|███████████████████████████████████████████| 7313/7313 [06:26<00:00, 18.93it/s]
+  ├ Train Loss: 0.2062, Train Accuracy: 96.61%
+  ├ Precision: 0.9649, Recall: 0.9148
+  ├ F1: 0.9392, F-beta: 0.9545
+  └ Pos accuracy: 91.48%, Neg accuracy: 98.67%
+V ┬ Epoch 7/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 517.62it/s]
+  ├ Val Loss: 0.7723, Val Accuracy: 91.21%
+  ├ Precision: 0.8768, Recall: 0.7545
+  ├ F1: 0.8111, F-beta: 0.8493 mAP: 0.8763
+  └ Pos accuracy: 75.45%, Neg accuracy: 96.47%
+  → No improvement for 3 epoch(s)
+
+T ┬ Epoch 8/20: 100%|███████████████████████████████████████████| 7313/7313 [06:24<00:00, 19.04it/s]
+  ├ Train Loss: 0.1987, Train Accuracy: 96.76%
+  ├ Precision: 0.9619, Recall: 0.9233
+  ├ F1: 0.9422, F-beta: 0.9539
+  └ Pos accuracy: 92.33%, Neg accuracy: 98.53%
+V ┬ Epoch 8/20: 100%|██████████████████████████████████████████| 2366/2366 [00:05<00:00, 472.82it/s]
+  ├ Val Loss: 0.7596, Val Accuracy: 90.51%
+  ├ Precision: 0.8197, Recall: 0.7951
+  ├ F1: 0.8072, F-beta: 0.8147 mAP: 0.8680
+  └ Pos accuracy: 79.51%, Neg accuracy: 94.17%
+  → No improvement for 4 epoch(s)
+
+T ┬ Epoch 9/20: 100%|███████████████████████████████████████████| 7313/7313 [06:32<00:00, 18.63it/s]
+  ├ Train Loss: 0.1991, Train Accuracy: 96.85%
+  ├ Precision: 0.9631, Recall: 0.9252
+  ├ F1: 0.9438, F-beta: 0.9553
+  └ Pos accuracy: 92.52%, Neg accuracy: 98.58%
+V ┬ Epoch 9/20: 100%|██████████████████████████████████████████| 2366/2366 [00:11<00:00, 204.61it/s]
+  ├ Val Loss: 1.0100, Val Accuracy: 91.07%
+  ├ Precision: 0.8530, Recall: 0.7764
+  ├ F1: 0.8129, F-beta: 0.8365 mAP: 0.8740
+  └ Pos accuracy: 77.64%, Neg accuracy: 95.54%
+  → New best f1: 0.8129
+
+T ┬ Epoch 10/20: 100%|██████████████████████████████████████████| 7313/7313 [06:35<00:00, 18.51it/s]
+  ├ Train Loss: 0.2049, Train Accuracy: 97.01%
+  ├ Precision: 0.9650, Recall: 0.9292
+  ├ F1: 0.9468, F-beta: 0.9576
+  └ Pos accuracy: 92.92%, Neg accuracy: 98.65%
+V ┬ Epoch 10/20: 100%|█████████████████████████████████████████| 2366/2366 [00:04<00:00, 535.49it/s]
+  ├ Val Loss: 1.0284, Val Accuracy: 90.56%
+  ├ Precision: 0.8203, Recall: 0.7969
+  ├ F1: 0.8085, F-beta: 0.8155 mAP: 0.8646
+  └ Pos accuracy: 79.69%, Neg accuracy: 94.18%
+  → No improvement for 1 epoch(s)
+
+T ┬ Epoch 11/20: 100%|██████████████████████████████████████████| 7313/7313 [06:40<00:00, 18.25it/s]
+  ├ Train Loss: 0.1943, Train Accuracy: 97.03%
+  ├ Precision: 0.9681, Recall: 0.9268
+  ├ F1: 0.9470, F-beta: 0.9596
+  └ Pos accuracy: 92.68%, Neg accuracy: 98.78%
+V ┬ Epoch 11/20: 100%|█████████████████████████████████████████| 2366/2366 [00:11<00:00, 205.26it/s]
+  ├ Val Loss: 1.9577, Val Accuracy: 90.99%
+  ├ Precision: 0.8394, Recall: 0.7908
+  ├ F1: 0.8144, F-beta: 0.8292 mAP: 0.8596
+  └ Pos accuracy: 79.08%, Neg accuracy: 94.96%
+  → New best f1: 0.8144
+
+T ┬ Epoch 12/20: 100%|██████████████████████████████████████████| 7313/7313 [06:21<00:00, 19.19it/s]
+  ├ Train Loss: 0.1911, Train Accuracy: 97.14%
+  ├ Precision: 0.9716, Recall: 0.9272
+  ├ F1: 0.9489, F-beta: 0.9624
+  └ Pos accuracy: 92.72%, Neg accuracy: 98.91%
+V ┬ Epoch 12/20: 100%|█████████████████████████████████████████| 2366/2366 [00:04<00:00, 529.72it/s]
+  ├ Val Loss: 1.1670, Val Accuracy: 91.05%
+  ├ Precision: 0.8456, Recall: 0.7854
+  ├ F1: 0.8144, F-beta: 0.8328 mAP: 0.8617
+  └ Pos accuracy: 78.54%, Neg accuracy: 95.22%
+  → No improvement for 1 epoch(s)
+
+T ┬ Epoch 13/20: 100%|██████████████████████████████████████████| 7313/7313 [06:34<00:00, 18.52it/s]
+  ├ Train Loss: 0.1895, Train Accuracy: 97.19%
+  ├ Precision: 0.9716, Recall: 0.9292
+  ├ F1: 0.9499, F-beta: 0.9628
+  └ Pos accuracy: 92.92%, Neg accuracy: 98.91%
+V ┬ Epoch 13/20: 100%|█████████████████████████████████████████| 2366/2366 [00:11<00:00, 203.83it/s]
+  ├ Val Loss: 2.3193, Val Accuracy: 91.18%
+  ├ Precision: 0.8642, Recall: 0.7678
+  ├ F1: 0.8131, F-beta: 0.8430 mAP: 0.8668
+  └ Pos accuracy: 76.78%, Neg accuracy: 95.98%
+  → No improvement for 2 epoch(s)
+
+T ┬ Epoch 14/20: 100%|██████████████████████████████████████████| 7313/7313 [06:49<00:00, 17.88it/s]
+  ├ Train Loss: 0.1789, Train Accuracy: 97.22%
+  ├ Precision: 0.9708, Recall: 0.9310
+  ├ F1: 0.9505, F-beta: 0.9626
+  └ Pos accuracy: 93.10%, Neg accuracy: 98.88%
+V ┬ Epoch 14/20: 100%|█████████████████████████████████████████| 2366/2366 [00:04<00:00, 534.82it/s]
+  ├ Val Loss: 2.3187, Val Accuracy: 91.10%
+  ├ Precision: 0.8622, Recall: 0.7668
+  ├ F1: 0.8117, F-beta: 0.8412 mAP: 0.8621
+  └ Pos accuracy: 76.68%, Neg accuracy: 95.91%
+  → No improvement for 3 epoch(s)
+
+T ┬ Epoch 15/20: 100%|██████████████████████████████████████████| 7313/7313 [07:01<00:00, 17.34it/s]
+  ├ Train Loss: 0.1807, Train Accuracy: 97.23%
+  ├ Precision: 0.9726, Recall: 0.9294
+  ├ F1: 0.9505, F-beta: 0.9636
+  └ Pos accuracy: 92.94%, Neg accuracy: 98.95%
+V ┬ Epoch 15/20: 100%|█████████████████████████████████████████| 2366/2366 [00:05<00:00, 410.52it/s]
+  ├ Val Loss: 1.1914, Val Accuracy: 91.14%
+  ├ Precision: 0.8569, Recall: 0.7753
+  ├ F1: 0.8140, F-beta: 0.8392 mAP: 0.8602
+  └ Pos accuracy: 77.53%, Neg accuracy: 95.68%
+  → No improvement for 4 epoch(s)
+
+T ┬ Epoch 16/20: 100%|██████████████████████████████████████████| 7313/7313 [07:06<00:00, 17.14it/s]
+  ├ Train Loss: 0.1874, Train Accuracy: 97.38%
+  ├ Precision: 0.9740, Recall: 0.9333
+  ├ F1: 0.9532, F-beta: 0.9656
+  └ Pos accuracy: 93.33%, Neg accuracy: 99.00%
+V ┬ Epoch 16/20: 100%|█████████████████████████████████████████| 2366/2366 [00:04<00:00, 537.61it/s]
+  ├ Val Loss: 1.0098, Val Accuracy: 90.92%
+  ├ Precision: 0.8464, Recall: 0.7778
+  ├ F1: 0.8107, F-beta: 0.8318 mAP: 0.8762
+  └ Pos accuracy: 77.78%, Neg accuracy: 95.30%
+  → No improvement for 5 epoch(s)
+
+Early stopping at epoch 16
+Restored best model from round 4 (f1=0.8144)
+
+============================================================
+Bootstrap Round 5/10
+============================================================
+
+============================================================
+Mining hard negatives from 1000 images...
+Score threshold: 0.0000
+============================================================
+Mining hard negatives: 100%|████████████████████████████████████| 1000/1000 [03:50<00:00,  4.33it/s]
+Mined 50000 candidates, heap contains 100000 hardest
+
+  Before merge:
+  ├ Main heap: 100000 hard negatives
+  └ New candidates: 50000
+      Main heap score range: [0.0000, 1.0000]
+
+  🔄 Re-scoring existing negatives with current model...
+  Re-scoring 100000 existing negatives...
+    └ Average score decrease: 0.0166
+  Merging 50000 new candidates...
+    └ Dropping 50000 negatives that are too easy
+  ✓ Final heap: 100000 negatives
+    Score range: [0.0000, 1.0000], mean: 0.0159
+  Training with 100000 mined + 67005 initial negatives
+  Pos:Neg ratio: 1:2.5
+Training on 234010 samples (pos: 67005, neg: 167005)
+Continuing from previous round's weights...
+T ┬ Epoch 1/20: 100%|███████████████████████████████████████████| 7313/7313 [05:57<00:00, 20.47it/s]
+  ├ Train Loss: 0.2364, Train Accuracy: 96.39%
+  ├ Precision: 0.9573, Recall: 0.9146
+  ├ F1: 0.9355, F-beta: 0.9484
+  └ Pos accuracy: 91.46%, Neg accuracy: 98.36%
+V ┬ Epoch 1/20: 100%|██████████████████████████████████████████| 2366/2366 [00:06<00:00, 341.76it/s]
+  ├ Val Loss: 0.7308, Val Accuracy: 91.12%
+  ├ Precision: 0.8827, Recall: 0.7437
+  ├ F1: 0.8073, F-beta: 0.8509 mAP: 0.8850
+  └ Pos accuracy: 74.37%, Neg accuracy: 96.70%
+  → New best f1: 0.8073
+
+T ┬ Epoch 2/20: 100%|███████████████████████████████████████████| 7313/7313 [06:12<00:00, 19.65it/s]
+  ├ Train Loss: 0.2149, Train Accuracy: 96.63%
+  ├ Precision: 0.9604, Recall: 0.9202
+  ├ F1: 0.9399, F-beta: 0.9521
+  └ Pos accuracy: 92.02%, Neg accuracy: 98.48%
+V ┬ Epoch 2/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 525.92it/s]
+  ├ Val Loss: 1.3937, Val Accuracy: 91.01%
+  ├ Precision: 0.8477, Recall: 0.7807
+  ├ F1: 0.8128, F-beta: 0.8334 mAP: 0.8704
+  └ Pos accuracy: 78.07%, Neg accuracy: 95.33%
+  → New best f1: 0.8128
+
+T ┬ Epoch 3/20: 100%|███████████████████████████████████████████| 7313/7313 [06:16<00:00, 19.40it/s]
+  ├ Train Loss: 0.1958, Train Accuracy: 96.77%
+  ├ Precision: 0.9657, Recall: 0.9199
+  ├ F1: 0.9422, F-beta: 0.9562
+  └ Pos accuracy: 91.99%, Neg accuracy: 98.69%
+V ┬ Epoch 3/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 529.73it/s]
+  ├ Val Loss: 1.7336, Val Accuracy: 91.29%
+  ├ Precision: 0.8742, Recall: 0.7611
+  ├ F1: 0.8137, F-beta: 0.8490 mAP: 0.8756
+  └ Pos accuracy: 76.11%, Neg accuracy: 96.35%
+  → New best f1: 0.8137
+
+T ┬ Epoch 4/20: 100%|███████████████████████████████████████████| 7313/7313 [06:21<00:00, 19.17it/s]
+  ├ Train Loss: 0.1971, Train Accuracy: 96.87%
+  ├ Precision: 0.9676, Recall: 0.9217
+  ├ F1: 0.9440, F-beta: 0.9580
+  └ Pos accuracy: 92.17%, Neg accuracy: 98.76%
+V ┬ Epoch 4/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 515.13it/s]
+  ├ Val Loss: 1.4101, Val Accuracy: 90.31%
+  ├ Precision: 0.8129, Recall: 0.7954
+  ├ F1: 0.8041, F-beta: 0.8093 mAP: 0.8776
+  └ Pos accuracy: 79.54%, Neg accuracy: 93.90%
+  → No improvement for 1 epoch(s)
+
+T ┬ Epoch 5/20: 100%|███████████████████████████████████████████| 7313/7313 [06:36<00:00, 18.45it/s]
+  ├ Train Loss: 0.1988, Train Accuracy: 97.01%
+  ├ Precision: 0.9676, Recall: 0.9266
+  ├ F1: 0.9467, F-beta: 0.9591
+  └ Pos accuracy: 92.66%, Neg accuracy: 98.76%
+V ┬ Epoch 5/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 535.46it/s]
+  ├ Val Loss: 1.5029, Val Accuracy: 91.09%
+  ├ Precision: 0.8485, Recall: 0.7835
+  ├ F1: 0.8147, F-beta: 0.8346 mAP: 0.8627
+  └ Pos accuracy: 78.35%, Neg accuracy: 95.34%
+  → New best f1: 0.8147
+
+T ┬ Epoch 6/20: 100%|███████████████████████████████████████████| 7313/7313 [06:41<00:00, 18.21it/s]
+  ├ Train Loss: 0.1998, Train Accuracy: 97.05%
+  ├ Precision: 0.9682, Recall: 0.9276
+  ├ F1: 0.9475, F-beta: 0.9598
+  └ Pos accuracy: 92.76%, Neg accuracy: 98.78%
+V ┬ Epoch 6/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 519.44it/s]
+  ├ Val Loss: 1.8217, Val Accuracy: 91.09%
+  ├ Precision: 0.8536, Recall: 0.7767
+  ├ F1: 0.8133, F-beta: 0.8370 mAP: 0.8659
+  └ Pos accuracy: 77.67%, Neg accuracy: 95.56%
+  → No improvement for 1 epoch(s)
+
+T ┬ Epoch 7/20: 100%|███████████████████████████████████████████| 7313/7313 [06:47<00:00, 17.94it/s]
+  ├ Train Loss: 0.2034, Train Accuracy: 97.05%
+  ├ Precision: 0.9671, Recall: 0.9285
+  ├ F1: 0.9474, F-beta: 0.9592
+  └ Pos accuracy: 92.85%, Neg accuracy: 98.73%
+V ┬ Epoch 7/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 543.60it/s]
+  ├ Val Loss: 1.9863, Val Accuracy: 90.69%
+  ├ Precision: 0.8233, Recall: 0.7990
+  ├ F1: 0.8110, F-beta: 0.8183 mAP: 0.8750
+  └ Pos accuracy: 79.90%, Neg accuracy: 94.28%
+  → No improvement for 2 epoch(s)
+
+T ┬ Epoch 8/20: 100%|███████████████████████████████████████████| 7313/7313 [06:48<00:00, 17.92it/s]
+  ├ Train Loss: 0.2064, Train Accuracy: 97.16%
+  ├ Precision: 0.9661, Recall: 0.9337
+  ├ F1: 0.9496, F-beta: 0.9594
+  └ Pos accuracy: 93.37%, Neg accuracy: 98.68%
+V ┬ Epoch 8/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 530.03it/s]
+  ├ Val Loss: 1.5661, Val Accuracy: 90.88%
+  ├ Precision: 0.8502, Recall: 0.7712
+  ├ F1: 0.8088, F-beta: 0.8331 mAP: 0.8715
+  └ Pos accuracy: 77.12%, Neg accuracy: 95.47%
+  → No improvement for 3 epoch(s)
+
+T ┬ Epoch 9/20: 100%|███████████████████████████████████████████| 7313/7313 [06:50<00:00, 17.80it/s]
+  ├ Train Loss: 0.1876, Train Accuracy: 97.23%
+  ├ Precision: 0.9719, Recall: 0.9303
+  ├ F1: 0.9506, F-beta: 0.9633
+  └ Pos accuracy: 93.03%, Neg accuracy: 98.92%
+V ┬ Epoch 9/20: 100%|██████████████████████████████████████████| 2366/2366 [00:08<00:00, 285.19it/s]
+  ├ Val Loss: 1.4183, Val Accuracy: 91.06%
+  ├ Precision: 0.8465, Recall: 0.7845
+  ├ F1: 0.8143, F-beta: 0.8334 mAP: 0.8564
+  └ Pos accuracy: 78.45%, Neg accuracy: 95.26%
+  → No improvement for 4 epoch(s)
+
+T ┬ Epoch 10/20: 100%|██████████████████████████████████████████| 7313/7313 [06:48<00:00, 17.90it/s]
+  ├ Train Loss: 0.1837, Train Accuracy: 97.30%
+  ├ Precision: 0.9729, Recall: 0.9318
+  ├ F1: 0.9519, F-beta: 0.9644
+  └ Pos accuracy: 93.18%, Neg accuracy: 98.96%
+V ┬ Epoch 10/20: 100%|█████████████████████████████████████████| 2366/2366 [00:04<00:00, 512.81it/s]
+  ├ Val Loss: 2.0654, Val Accuracy: 91.29%
+  ├ Precision: 0.8915, Recall: 0.7421
+  ├ F1: 0.8100, F-beta: 0.8570 mAP: 0.8849
+  └ Pos accuracy: 74.21%, Neg accuracy: 96.99%
+  → No improvement for 5 epoch(s)
+
+Early stopping at epoch 10
+Restored best model from round 5 (f1=0.8147)
+
+============================================================
+Bootstrap Round 6/10
+============================================================
+
+============================================================
+Mining hard negatives from 1000 images...
+Score threshold: 0.0000
+============================================================
+Mining hard negatives: 100%|████████████████████████████████████| 1000/1000 [05:28<00:00,  3.05it/s]
+Mined 50000 candidates, heap contains 100000 hardest
+
+  Before merge:
+  ├ Main heap: 100000 hard negatives
+  └ New candidates: 50000
+      Main heap score range: [0.0000, 1.0000]
+
+  🔄 Re-scoring existing negatives with current model...
+  Re-scoring 100000 existing negatives...
+    └ Average score decrease: 0.0159
+  Merging 50000 new candidates...
+    └ Dropping 50000 negatives that are too easy
+  ✓ Final heap: 100000 negatives
+    Score range: [0.0000, 1.0000], mean: 0.0181
+  Training with 100000 mined + 67005 initial negatives
+  Pos:Neg ratio: 1:2.5
+Training on 234010 samples (pos: 67005, neg: 167005)
+Continuing from previous round's weights...
+T ┬ Epoch 1/20: 100%|███████████████████████████████████████████| 7313/7313 [06:00<00:00, 20.28it/s]
+  ├ Train Loss: 0.2458, Train Accuracy: 96.25%
+  ├ Precision: 0.9575, Recall: 0.9094
+  ├ F1: 0.9328, F-beta: 0.9475
+  └ Pos accuracy: 90.94%, Neg accuracy: 98.38%
+V ┬ Epoch 1/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 529.44it/s]
+  ├ Val Loss: 1.6092, Val Accuracy: 91.26%
+  ├ Precision: 0.8929, Recall: 0.7390
+  ├ F1: 0.8087, F-beta: 0.8572 mAP: 0.8784
+  └ Pos accuracy: 73.90%, Neg accuracy: 97.04%
+  → New best f1: 0.8087
+
+T ┬ Epoch 2/20: 100%|███████████████████████████████████████████| 7313/7313 [06:07<00:00, 19.90it/s]
+  ├ Train Loss: 0.2302, Train Accuracy: 96.59%
+  ├ Precision: 0.9619, Recall: 0.9171
+  ├ F1: 0.9390, F-beta: 0.9526
+  └ Pos accuracy: 91.71%, Neg accuracy: 98.54%
+V ┬ Epoch 2/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 517.91it/s]
+  ├ Val Loss: 0.9106, Val Accuracy: 91.23%
+  ├ Precision: 0.8871, Recall: 0.7440
+  ├ F1: 0.8092, F-beta: 0.8542 mAP: 0.8808
+  └ Pos accuracy: 74.40%, Neg accuracy: 96.84%
+  → New best f1: 0.8092
+
+T ┬ Epoch 3/20: 100%|███████████████████████████████████████████| 7313/7313 [06:14<00:00, 19.52it/s]
+  ├ Train Loss: 0.2214, Train Accuracy: 96.77%
+  ├ Precision: 0.9664, Recall: 0.9191
+  ├ F1: 0.9422, F-beta: 0.9566
+  └ Pos accuracy: 91.91%, Neg accuracy: 98.72%
+V ┬ Epoch 3/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 520.38it/s]
+  ├ Val Loss: 0.9477, Val Accuracy: 91.34%
+  ├ Precision: 0.8948, Recall: 0.7407
+  ├ F1: 0.8105, F-beta: 0.8591 mAP: 0.8859
+  └ Pos accuracy: 74.07%, Neg accuracy: 97.10%
+  → New best f1: 0.8105
+
+T ┬ Epoch 4/20: 100%|███████████████████████████████████████████| 7313/7313 [06:16<00:00, 19.43it/s]
+  ├ Train Loss: 0.2146, Train Accuracy: 96.86%
+  ├ Precision: 0.9666, Recall: 0.9221
+  ├ F1: 0.9438, F-beta: 0.9574
+  └ Pos accuracy: 92.21%, Neg accuracy: 98.72%
+V ┬ Epoch 4/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 526.38it/s]
+  ├ Val Loss: 1.4798, Val Accuracy: 91.29%
+  ├ Precision: 0.8799, Recall: 0.7547
+  ├ F1: 0.8125, F-beta: 0.8516 mAP: 0.8752
+  └ Pos accuracy: 75.47%, Neg accuracy: 96.57%
+  → New best f1: 0.8125
+
+T ┬ Epoch 5/20: 100%|███████████████████████████████████████████| 7313/7313 [06:28<00:00, 18.85it/s]
+  ├ Train Loss: 0.2068, Train Accuracy: 96.93%
+  ├ Precision: 0.9678, Recall: 0.9234
+  ├ F1: 0.9451, F-beta: 0.9586
+  └ Pos accuracy: 92.34%, Neg accuracy: 98.77%
+V ┬ Epoch 5/20: 100%|██████████████████████████████████████████| 2366/2366 [00:06<00:00, 340.78it/s]
+  ├ Val Loss: 1.9321, Val Accuracy: 90.77%
+  ├ Precision: 0.8404, Recall: 0.7785
+  ├ F1: 0.8083, F-beta: 0.8273 mAP: 0.8586
+  └ Pos accuracy: 77.85%, Neg accuracy: 95.07%
+  → No improvement for 1 epoch(s)
+
+T ┬ Epoch 6/20: 100%|███████████████████████████████████████████| 7313/7313 [06:39<00:00, 18.29it/s]
+  ├ Train Loss: 0.2090, Train Accuracy: 97.08%
+  ├ Precision: 0.9699, Recall: 0.9267
+  ├ F1: 0.9478, F-beta: 0.9609
+  └ Pos accuracy: 92.67%, Neg accuracy: 98.85%
+V ┬ Epoch 6/20: 100%|██████████████████████████████████████████| 2366/2366 [00:11<00:00, 203.68it/s]
+  ├ Val Loss: 1.4233, Val Accuracy: 91.32%
+  ├ Precision: 0.8833, Recall: 0.7520
+  ├ F1: 0.8124, F-beta: 0.8535 mAP: 0.8765
+  └ Pos accuracy: 75.20%, Neg accuracy: 96.69%
+  → No improvement for 2 epoch(s)
+
+T ┬ Epoch 7/20: 100%|███████████████████████████████████████████| 7313/7313 [06:44<00:00, 18.08it/s]
+  ├ Train Loss: 0.1978, Train Accuracy: 97.15%
+  ├ Precision: 0.9687, Recall: 0.9307
+  ├ F1: 0.9493, F-beta: 0.9608
+  └ Pos accuracy: 93.07%, Neg accuracy: 98.79%
+V ┬ Epoch 7/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 540.58it/s]
+  ├ Val Loss: 1.6429, Val Accuracy: 91.32%
+  ├ Precision: 0.8779, Recall: 0.7584
+  ├ F1: 0.8138, F-beta: 0.8511 mAP: 0.8761
+  └ Pos accuracy: 75.84%, Neg accuracy: 96.48%
+  → New best f1: 0.8138
+
+T ┬ Epoch 8/20: 100%|███████████████████████████████████████████| 7313/7313 [06:43<00:00, 18.13it/s]
+  ├ Train Loss: 0.2077, Train Accuracy: 97.22%
+  ├ Precision: 0.9697, Recall: 0.9320
+  ├ F1: 0.9505, F-beta: 0.9619
+  └ Pos accuracy: 93.20%, Neg accuracy: 98.83%
+V ┬ Epoch 8/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 525.65it/s]
+  ├ Val Loss: 1.9168, Val Accuracy: 90.98%
+  ├ Precision: 0.8537, Recall: 0.7714
+  ├ F1: 0.8105, F-beta: 0.8359 mAP: 0.8782
+  └ Pos accuracy: 77.14%, Neg accuracy: 95.59%
+  → No improvement for 1 epoch(s)
+
+T ┬ Epoch 9/20: 100%|███████████████████████████████████████████| 7313/7313 [06:47<00:00, 17.95it/s]
+  ├ Train Loss: 0.1903, Train Accuracy: 97.35%
+  ├ Precision: 0.9725, Recall: 0.9339
+  ├ F1: 0.9528, F-beta: 0.9645
+  └ Pos accuracy: 93.39%, Neg accuracy: 98.94%
+V ┬ Epoch 9/20: 100%|██████████████████████████████████████████| 2366/2366 [00:06<00:00, 339.33it/s]
+  ├ Val Loss: 1.4489, Val Accuracy: 91.30%
+  ├ Precision: 0.8751, Recall: 0.7605
+  ├ F1: 0.8138, F-beta: 0.8495 mAP: 0.8781
+  └ Pos accuracy: 76.05%, Neg accuracy: 96.38%
+  → No improvement for 2 epoch(s)
+
+T ┬ Epoch 10/20: 100%|██████████████████████████████████████████| 7313/7313 [07:00<00:00, 17.37it/s]
+  ├ Train Loss: 0.1948, Train Accuracy: 97.36%
+  ├ Precision: 0.9738, Recall: 0.9329
+  ├ F1: 0.9529, F-beta: 0.9653
+  └ Pos accuracy: 93.29%, Neg accuracy: 98.99%
+V ┬ Epoch 10/20: 100%|█████████████████████████████████████████| 2366/2366 [00:04<00:00, 501.96it/s]
+  ├ Val Loss: 2.0592, Val Accuracy: 91.14%
+  ├ Precision: 0.8695, Recall: 0.7596
+  ├ F1: 0.8109, F-beta: 0.8450 mAP: 0.8723
+  └ Pos accuracy: 75.96%, Neg accuracy: 96.20%
+  → No improvement for 3 epoch(s)
+
+T ┬ Epoch 11/20: 100%|██████████████████████████████████████████| 7313/7313 [06:45<00:00, 18.06it/s]
+  ├ Train Loss: 0.1843, Train Accuracy: 97.42%
+  ├ Precision: 0.9746, Recall: 0.9342
+  ├ F1: 0.9540, F-beta: 0.9663
+  └ Pos accuracy: 93.42%, Neg accuracy: 99.02%
+V ┬ Epoch 11/20: 100%|█████████████████████████████████████████| 2366/2366 [00:04<00:00, 531.82it/s]
+  ├ Val Loss: 1.1461, Val Accuracy: 91.23%
+  ├ Precision: 0.8660, Recall: 0.7681
+  ├ F1: 0.8141, F-beta: 0.8445 mAP: 0.8686
+  └ Pos accuracy: 76.81%, Neg accuracy: 96.04%
+  → New best f1: 0.8141
+
+T ┬ Epoch 12/20: 100%|██████████████████████████████████████████| 7313/7313 [07:02<00:00, 17.30it/s]
+  ├ Train Loss: 0.1829, Train Accuracy: 97.41%
+  ├ Precision: 0.9744, Recall: 0.9340
+  ├ F1: 0.9538, F-beta: 0.9661
+  └ Pos accuracy: 93.40%, Neg accuracy: 99.02%
+V ┬ Epoch 12/20: 100%|█████████████████████████████████████████| 2366/2366 [00:04<00:00, 527.18it/s]
+  ├ Val Loss: 1.3496, Val Accuracy: 91.06%
+  ├ Precision: 0.8503, Recall: 0.7795
+  ├ F1: 0.8134, F-beta: 0.8351 mAP: 0.8739
+  └ Pos accuracy: 77.95%, Neg accuracy: 95.42%
+  → No improvement for 1 epoch(s)
+
+T ┬ Epoch 13/20: 100%|██████████████████████████████████████████| 7313/7313 [07:01<00:00, 17.33it/s]
+  ├ Train Loss: 0.1901, Train Accuracy: 97.38%
+  ├ Precision: 0.9728, Recall: 0.9348
+  ├ F1: 0.9534, F-beta: 0.9650
+  └ Pos accuracy: 93.48%, Neg accuracy: 98.95%
+V ┬ Epoch 13/20: 100%|█████████████████████████████████████████| 2366/2366 [00:04<00:00, 539.69it/s]
+  ├ Val Loss: 1.4858, Val Accuracy: 90.09%
+  ├ Precision: 0.8007, Recall: 0.8034
+  ├ F1: 0.8020, F-beta: 0.8012 mAP: 0.8570
+  └ Pos accuracy: 80.34%, Neg accuracy: 93.33%
+  → No improvement for 2 epoch(s)
+
+T ┬ Epoch 14/20: 100%|██████████████████████████████████████████| 7313/7313 [07:01<00:00, 17.34it/s]
+  ├ Train Loss: 0.1863, Train Accuracy: 97.64%
+  ├ Precision: 0.9756, Recall: 0.9413
+  ├ F1: 0.9581, F-beta: 0.9685
+  └ Pos accuracy: 94.13%, Neg accuracy: 99.06%
+V ┬ Epoch 14/20: 100%|█████████████████████████████████████████| 2366/2366 [00:04<00:00, 532.01it/s]
+  ├ Val Loss: 1.6172, Val Accuracy: 90.94%
+  ├ Precision: 0.8466, Recall: 0.7787
+  ├ F1: 0.8112, F-beta: 0.8321 mAP: 0.8628
+  └ Pos accuracy: 77.87%, Neg accuracy: 95.30%
+  → No improvement for 3 epoch(s)
+
+T ┬ Epoch 15/20: 100%|██████████████████████████████████████████| 7313/7313 [07:06<00:00, 17.14it/s]
+  ├ Train Loss: 0.1714, Train Accuracy: 97.68%
+  ├ Precision: 0.9767, Recall: 0.9416
+  ├ F1: 0.9588, F-beta: 0.9695
+  └ Pos accuracy: 94.16%, Neg accuracy: 99.10%
+V ┬ Epoch 15/20: 100%|█████████████████████████████████████████| 2366/2366 [00:05<00:00, 441.62it/s]
+  ├ Val Loss: 2.0120, Val Accuracy: 91.11%
+  ├ Precision: 0.8480, Recall: 0.7852
+  ├ F1: 0.8154, F-beta: 0.8347 mAP: 0.8603
+  └ Pos accuracy: 78.52%, Neg accuracy: 95.31%
+  → New best f1: 0.8154
+
+T ┬ Epoch 16/20: 100%|██████████████████████████████████████████| 7313/7313 [07:12<00:00, 16.93it/s]
+  ├ Train Loss: 0.1738, Train Accuracy: 97.66%
+  ├ Precision: 0.9758, Recall: 0.9417
+  ├ F1: 0.9584, F-beta: 0.9688
+  └ Pos accuracy: 94.17%, Neg accuracy: 99.06%
+V ┬ Epoch 16/20: 100%|█████████████████████████████████████████| 2366/2366 [00:04<00:00, 527.18it/s]
+  ├ Val Loss: 2.6435, Val Accuracy: 91.02%
+  ├ Precision: 0.8466, Recall: 0.7825
+  ├ F1: 0.8133, F-beta: 0.8329 mAP: 0.8554
+  └ Pos accuracy: 78.25%, Neg accuracy: 95.27%
+  → No improvement for 1 epoch(s)
+
+T ┬ Epoch 17/20: 100%|██████████████████████████████████████████| 7313/7313 [07:18<00:00, 16.67it/s]
+  ├ Train Loss: 0.1756, Train Accuracy: 97.70%
+  ├ Precision: 0.9771, Recall: 0.9417
+  ├ F1: 0.9591, F-beta: 0.9698
+  └ Pos accuracy: 94.17%, Neg accuracy: 99.12%
+V ┬ Epoch 17/20: 100%|█████████████████████████████████████████| 2366/2366 [00:11<00:00, 205.25it/s]
+  ├ Val Loss: 2.4033, Val Accuracy: 91.03%
+  ├ Precision: 0.8593, Recall: 0.7669
+  ├ F1: 0.8105, F-beta: 0.8391 mAP: 0.8733
+  └ Pos accuracy: 76.69%, Neg accuracy: 95.81%
+  → No improvement for 2 epoch(s)
+
+T ┬ Epoch 18/20: 100%|██████████████████████████████████████████| 7313/7313 [07:14<00:00, 16.83it/s]
+  ├ Train Loss: 0.1784, Train Accuracy: 97.81%
+  ├ Precision: 0.9789, Recall: 0.9438
+  ├ F1: 0.9610, F-beta: 0.9717
+  └ Pos accuracy: 94.38%, Neg accuracy: 99.18%
+V ┬ Epoch 18/20: 100%|█████████████████████████████████████████| 2366/2366 [00:04<00:00, 536.72it/s]
+  ├ Val Loss: 1.5661, Val Accuracy: 91.21%
+  ├ Precision: 0.8637, Recall: 0.7699
+  ├ F1: 0.8141, F-beta: 0.8431 mAP: 0.8676
+  └ Pos accuracy: 76.99%, Neg accuracy: 95.95%
+  → No improvement for 3 epoch(s)
+
+T ┬ Epoch 19/20: 100%|██████████████████████████████████████████| 7313/7313 [07:12<00:00, 16.90it/s]
+  ├ Train Loss: 0.1735, Train Accuracy: 97.72%
+  ├ Precision: 0.9779, Recall: 0.9417
+  ├ F1: 0.9595, F-beta: 0.9704
+  └ Pos accuracy: 94.17%, Neg accuracy: 99.15%
+V ┬ Epoch 19/20: 100%|█████████████████████████████████████████| 2366/2366 [00:12<00:00, 188.81it/s]
+  ├ Val Loss: 1.6783, Val Accuracy: 91.09%
+  ├ Precision: 0.8523, Recall: 0.7783
+  ├ F1: 0.8137, F-beta: 0.8364 mAP: 0.8482
+  └ Pos accuracy: 77.83%, Neg accuracy: 95.51%
+  → No improvement for 4 epoch(s)
+
+T ┬ Epoch 20/20: 100%|██████████████████████████████████████████| 7313/7313 [07:15<00:00, 16.80it/s]
+  ├ Train Loss: 0.1708, Train Accuracy: 97.74%
+  ├ Precision: 0.9785, Recall: 0.9418
+  ├ F1: 0.9598, F-beta: 0.9709
+  └ Pos accuracy: 94.18%, Neg accuracy: 99.17%
+V ┬ Epoch 20/20: 100%|█████████████████████████████████████████| 2366/2366 [00:04<00:00, 537.62it/s]
+  ├ Val Loss: 1.9829, Val Accuracy: 91.35%
+  ├ Precision: 0.8857, Recall: 0.7507
+  ├ F1: 0.8126, F-beta: 0.8550 mAP: 0.8769
+  └ Pos accuracy: 75.07%, Neg accuracy: 96.77%
+  → No improvement for 5 epoch(s)
+
+Early stopping at epoch 20
+Restored best model from round 6 (f1=0.8154)
+★ New overall best! f1=0.8154
+
+============================================================
+Bootstrap Round 7/10
+============================================================
+
+============================================================
+Mining hard negatives from 1000 images...
+Score threshold: 0.0000
+============================================================
+Mining hard negatives: 100%|████████████████████████████████████| 1000/1000 [04:53<00:00,  3.41it/s]
+Mined 50000 candidates, heap contains 100000 hardest
+
+  Before merge:
+  ├ Main heap: 100000 hard negatives
+  └ New candidates: 50000
+      Main heap score range: [0.0000, 1.0000]
+
+  🔄 Re-scoring existing negatives with current model...
+  Re-scoring 100000 existing negatives...
+    └ Average score decrease: 0.0181
+  Merging 50000 new candidates...
+    └ Dropping 50000 negatives that are too easy
+  ✓ Final heap: 100000 negatives
+    Score range: [0.0000, 1.0000], mean: 0.0117
+  Training with 100000 mined + 67005 initial negatives
+  Pos:Neg ratio: 1:2.5
+Training on 234010 samples (pos: 67005, neg: 167005)
+Continuing from previous round's weights...
+T ┬ Epoch 1/20: 100%|███████████████████████████████████████████| 7313/7313 [06:32<00:00, 18.62it/s]
+  ├ Train Loss: 0.2381, Train Accuracy: 96.97%
+  ├ Precision: 0.9641, Recall: 0.9288
+  ├ F1: 0.9461, F-beta: 0.9568
+  └ Pos accuracy: 92.88%, Neg accuracy: 98.61%
+V ┬ Epoch 1/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 531.39it/s]
+  ├ Val Loss: 3.0994, Val Accuracy: 91.32%
+  ├ Precision: 0.8911, Recall: 0.7435
+  ├ F1: 0.8107, F-beta: 0.8571 mAP: 0.8659
+  └ Pos accuracy: 74.35%, Neg accuracy: 96.97%
+  → New best f1: 0.8107
+
+T ┬ Epoch 2/20: 100%|███████████████████████████████████████████| 7313/7313 [06:37<00:00, 18.39it/s]
+  ├ Train Loss: 0.2184, Train Accuracy: 97.10%
+  ├ Precision: 0.9671, Recall: 0.9303
+  ├ F1: 0.9484, F-beta: 0.9595
+  └ Pos accuracy: 93.03%, Neg accuracy: 98.73%
+V ┬ Epoch 2/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 551.76it/s]
+  ├ Val Loss: 1.4406, Val Accuracy: 91.02%
+  ├ Precision: 0.8564, Recall: 0.7699
+  ├ F1: 0.8109, F-beta: 0.8376 mAP: 0.8750
+  └ Pos accuracy: 76.99%, Neg accuracy: 95.70%
+  → New best f1: 0.8109
+
+T ┬ Epoch 3/20: 100%|███████████████████████████████████████████| 7313/7313 [06:53<00:00, 17.68it/s]
+  ├ Train Loss: 0.2160, Train Accuracy: 97.15%
+  ├ Precision: 0.9684, Recall: 0.9310
+  ├ F1: 0.9493, F-beta: 0.9607
+  └ Pos accuracy: 93.10%, Neg accuracy: 98.78%
+V ┬ Epoch 3/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 553.45it/s]
+  ├ Val Loss: 2.0105, Val Accuracy: 90.80%
+  ├ Precision: 0.8265, Recall: 0.8001
+  ├ F1: 0.8131, F-beta: 0.8211 mAP: 0.8586
+  └ Pos accuracy: 80.01%, Neg accuracy: 94.40%
+  → New best f1: 0.8131
+
+T ┬ Epoch 4/20: 100%|███████████████████████████████████████████| 7313/7313 [06:47<00:00, 17.94it/s]
+  ├ Train Loss: 0.2022, Train Accuracy: 97.31%
+  ├ Precision: 0.9698, Recall: 0.9352
+  ├ F1: 0.9522, F-beta: 0.9627
+  └ Pos accuracy: 93.52%, Neg accuracy: 98.83%
+V ┬ Epoch 4/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 546.57it/s]
+  ├ Val Loss: 2.5691, Val Accuracy: 91.31%
+  ├ Precision: 0.8925, Recall: 0.7418
+  ├ F1: 0.8102, F-beta: 0.8576 mAP: 0.8712
+  └ Pos accuracy: 74.18%, Neg accuracy: 97.02%
+  → No improvement for 1 epoch(s)
+
+T ┬ Epoch 5/20: 100%|███████████████████████████████████████████| 7313/7313 [07:13<00:00, 16.86it/s]
+  ├ Train Loss: 0.2055, Train Accuracy: 97.50%
+  ├ Precision: 0.9725, Recall: 0.9392
+  ├ F1: 0.9556, F-beta: 0.9657
+  └ Pos accuracy: 93.92%, Neg accuracy: 98.93%
+V ┬ Epoch 5/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 543.86it/s]
+  ├ Val Loss: 2.9920, Val Accuracy: 91.26%
+  ├ Precision: 0.8766, Recall: 0.7569
+  ├ F1: 0.8124, F-beta: 0.8498 mAP: 0.8577
+  └ Pos accuracy: 75.69%, Neg accuracy: 96.45%
+  → No improvement for 2 epoch(s)
+
+T ┬ Epoch 6/20: 100%|███████████████████████████████████████████| 7313/7313 [07:02<00:00, 17.30it/s]
+  ├ Train Loss: 0.1821, Train Accuracy: 97.56%
+  ├ Precision: 0.9731, Recall: 0.9409
+  ├ F1: 0.9567, F-beta: 0.9665
+  └ Pos accuracy: 94.09%, Neg accuracy: 98.96%
+V ┬ Epoch 6/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 536.24it/s]
+  ├ Val Loss: 2.2596, Val Accuracy: 91.22%
+  ├ Precision: 0.8666, Recall: 0.7670
+  ├ F1: 0.8138, F-beta: 0.8447 mAP: 0.8630
+  └ Pos accuracy: 76.70%, Neg accuracy: 96.06%
+  → New best f1: 0.8138
+
+T ┬ Epoch 7/20: 100%|███████████████████████████████████████████| 7313/7313 [06:55<00:00, 17.62it/s]
+  ├ Train Loss: 0.1826, Train Accuracy: 97.59%
+  ├ Precision: 0.9733, Recall: 0.9415
+  ├ F1: 0.9571, F-beta: 0.9668
+  └ Pos accuracy: 94.15%, Neg accuracy: 98.96%
+V ┬ Epoch 7/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 544.17it/s]
+  ├ Val Loss: 2.7697, Val Accuracy: 91.21%
+  ├ Precision: 0.8728, Recall: 0.7590
+  ├ F1: 0.8119, F-beta: 0.8474 mAP: 0.8687
+  └ Pos accuracy: 75.90%, Neg accuracy: 96.31%
+  → No improvement for 1 epoch(s)
+
+T ┬ Epoch 8/20: 100%|███████████████████████████████████████████| 7313/7313 [07:12<00:00, 16.90it/s]
+  ├ Train Loss: 0.1888, Train Accuracy: 97.65%
+  ├ Precision: 0.9769, Recall: 0.9403
+  ├ F1: 0.9582, F-beta: 0.9693
+  └ Pos accuracy: 94.03%, Neg accuracy: 99.11%
+V ┬ Epoch 8/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 535.53it/s]
+  ├ Val Loss: 1.7202, Val Accuracy: 91.23%
+  ├ Precision: 0.8758, Recall: 0.7564
+  ├ F1: 0.8117, F-beta: 0.8490 mAP: 0.8700
+  └ Pos accuracy: 75.64%, Neg accuracy: 96.42%
+  → No improvement for 2 epoch(s)
+
+T ┬ Epoch 9/20: 100%|███████████████████████████████████████████| 7313/7313 [07:08<00:00, 17.05it/s]
+  ├ Train Loss: 0.1994, Train Accuracy: 97.70%
+  ├ Precision: 0.9771, Recall: 0.9418
+  ├ F1: 0.9591, F-beta: 0.9698
+  └ Pos accuracy: 94.18%, Neg accuracy: 99.11%
+V ┬ Epoch 9/20: 100%|██████████████████████████████████████████| 2366/2366 [00:11<00:00, 199.64it/s]
+  ├ Val Loss: 3.0283, Val Accuracy: 91.27%
+  ├ Precision: 0.8898, Recall: 0.7426
+  ├ F1: 0.8096, F-beta: 0.8559 mAP: 0.8799
+  └ Pos accuracy: 74.26%, Neg accuracy: 96.94%
+  → No improvement for 3 epoch(s)
+
+T ┬ Epoch 10/20: 100%|██████████████████████████████████████████| 7313/7313 [07:18<00:00, 16.68it/s]
+  ├ Train Loss: 0.1896, Train Accuracy: 97.75%
+  ├ Precision: 0.9773, Recall: 0.9434
+  ├ F1: 0.9600, F-beta: 0.9703
+  └ Pos accuracy: 94.34%, Neg accuracy: 99.12%
+V ┬ Epoch 10/20: 100%|█████████████████████████████████████████| 2366/2366 [00:11<00:00, 198.72it/s]
+  ├ Val Loss: 2.7051, Val Accuracy: 91.13%
+  ├ Precision: 0.8582, Recall: 0.7730
+  ├ F1: 0.8133, F-beta: 0.8396 mAP: 0.8628
+  └ Pos accuracy: 77.30%, Neg accuracy: 95.74%
+  → No improvement for 4 epoch(s)
+
+T ┬ Epoch 11/20: 100%|██████████████████████████████████████████| 7313/7313 [07:14<00:00, 16.83it/s]
+  ├ Train Loss: 0.1872, Train Accuracy: 97.76%
+  ├ Precision: 0.9776, Recall: 0.9434
+  ├ F1: 0.9602, F-beta: 0.9706
+  └ Pos accuracy: 94.34%, Neg accuracy: 99.13%
+V ┬ Epoch 11/20: 100%|█████████████████████████████████████████| 2366/2366 [00:04<00:00, 534.03it/s]
+  ├ Val Loss: 4.8054, Val Accuracy: 91.16%
+  ├ Precision: 0.8592, Recall: 0.7732
+  ├ F1: 0.8139, F-beta: 0.8405 mAP: 0.8523
+  └ Pos accuracy: 77.32%, Neg accuracy: 95.78%
+  → New best f1: 0.8139
+
+T ┬ Epoch 12/20: 100%|██████████████████████████████████████████| 7313/7313 [07:11<00:00, 16.94it/s]
+  ├ Train Loss: 0.1942, Train Accuracy: 97.67%
+  ├ Precision: 0.9776, Recall: 0.9403
+  ├ F1: 0.9586, F-beta: 0.9699
+  └ Pos accuracy: 94.03%, Neg accuracy: 99.14%
+V ┬ Epoch 12/20: 100%|█████████████████████████████████████████| 2366/2366 [00:04<00:00, 535.63it/s]
+  ├ Val Loss: 4.5086, Val Accuracy: 91.26%
+  ├ Precision: 0.8829, Recall: 0.7499
+  ├ F1: 0.8110, F-beta: 0.8527 mAP: 0.8575
+  └ Pos accuracy: 74.99%, Neg accuracy: 96.69%
+  → No improvement for 1 epoch(s)
+
+T ┬ Epoch 13/20: 100%|██████████████████████████████████████████| 7313/7313 [07:11<00:00, 16.95it/s]
+  ├ Train Loss: 0.2024, Train Accuracy: 97.67%
+  ├ Precision: 0.9752, Recall: 0.9428
+  ├ F1: 0.9587, F-beta: 0.9685
+  └ Pos accuracy: 94.28%, Neg accuracy: 99.04%
+V ┬ Epoch 13/20: 100%|█████████████████████████████████████████| 2366/2366 [00:04<00:00, 562.05it/s]
+  ├ Val Loss: 2.7910, Val Accuracy: 90.21%
+  ├ Precision: 0.7993, Recall: 0.8122
+  ├ F1: 0.8057, F-beta: 0.8018 mAP: 0.8471
+  └ Pos accuracy: 81.22%, Neg accuracy: 93.20%
+  → No improvement for 2 epoch(s)
+
+T ┬ Epoch 14/20: 100%|██████████████████████████████████████████| 7313/7313 [07:14<00:00, 16.85it/s]
+  ├ Train Loss: 0.1980, Train Accuracy: 97.71%
+  ├ Precision: 0.9761, Recall: 0.9432
+  ├ F1: 0.9594, F-beta: 0.9694
+  └ Pos accuracy: 94.32%, Neg accuracy: 99.07%
+V ┬ Epoch 14/20: 100%|█████████████████████████████████████████| 2366/2366 [00:04<00:00, 549.26it/s]
+  ├ Val Loss: 2.7623, Val Accuracy: 91.25%
+  ├ Precision: 0.8710, Recall: 0.7630
+  ├ F1: 0.8135, F-beta: 0.8471 mAP: 0.8592
+  └ Pos accuracy: 76.30%, Neg accuracy: 96.23%
+  → No improvement for 3 epoch(s)
+
+T ┬ Epoch 15/20: 100%|██████████████████████████████████████████| 7313/7313 [12:24<00:00,  9.83it/s]
+  ├ Train Loss: 0.1817, Train Accuracy: 97.96%
+  ├ Precision: 0.9800, Recall: 0.9482
+  ├ F1: 0.9638, F-beta: 0.9735
+  └ Pos accuracy: 94.82%, Neg accuracy: 99.22%
+V ┬ Epoch 15/20: 100%|█████████████████████████████████████████| 2366/2366 [00:04<00:00, 530.13it/s]
+  ├ Val Loss: 2.9742, Val Accuracy: 90.92%
+  ├ Precision: 0.8386, Recall: 0.7884
+  ├ F1: 0.8127, F-beta: 0.8281 mAP: 0.8493
+  └ Pos accuracy: 78.84%, Neg accuracy: 94.94%
+  → No improvement for 4 epoch(s)
+
+T ┬ Epoch 16/20: 100%|██████████████████████████████████████████| 7313/7313 [07:25<00:00, 16.43it/s]
+  ├ Train Loss: 0.1955, Train Accuracy: 97.86%
+  ├ Precision: 0.9782, Recall: 0.9464
+  ├ F1: 0.9620, F-beta: 0.9716
+  └ Pos accuracy: 94.64%, Neg accuracy: 99.15%
+V ┬ Epoch 16/20: 100%|█████████████████████████████████████████| 2366/2366 [00:04<00:00, 558.51it/s]
+  ├ Val Loss: 2.6738, Val Accuracy: 91.23%
+  ├ Precision: 0.8623, Recall: 0.7727
+  ├ F1: 0.8151, F-beta: 0.8427 mAP: 0.8605
+  └ Pos accuracy: 77.27%, Neg accuracy: 95.89%
+  → New best f1: 0.8151
+
+T ┬ Epoch 17/20: 100%|██████████████████████████████████████████| 7313/7313 [07:51<00:00, 15.50it/s]
+  ├ Train Loss: 0.2119, Train Accuracy: 97.95%
+  ├ Precision: 0.9796, Recall: 0.9481
+  ├ F1: 0.9636, F-beta: 0.9731
+  └ Pos accuracy: 94.81%, Neg accuracy: 99.21%
+V ┬ Epoch 17/20: 100%|█████████████████████████████████████████| 2366/2366 [00:04<00:00, 561.21it/s]
+  ├ Val Loss: 4.2614, Val Accuracy: 91.13%
+  ├ Precision: 0.8574, Recall: 0.7741
+  ├ F1: 0.8136, F-beta: 0.8393 mAP: 0.8432
+  └ Pos accuracy: 77.41%, Neg accuracy: 95.71%
+  → No improvement for 1 epoch(s)
+
+T ┬ Epoch 18/20: 100%|██████████████████████████████████████████| 7313/7313 [56:21<00:00,  2.16it/s]
+  ├ Train Loss: 0.1777, Train Accuracy: 97.90%
+  ├ Precision: 0.9784, Recall: 0.9476
+  ├ F1: 0.9628, F-beta: 0.9721
+  └ Pos accuracy: 94.76%, Neg accuracy: 99.16%
+V ┬ Epoch 18/20: 100%|█████████████████████████████████████████| 2366/2366 [00:07<00:00, 309.10it/s]
+  ├ Val Loss: 3.1229, Val Accuracy: 91.08%
+  ├ Precision: 0.8596, Recall: 0.7688
+  ├ F1: 0.8117, F-beta: 0.8398 mAP: 0.8564
+  └ Pos accuracy: 76.88%, Neg accuracy: 95.82%
+  → No improvement for 2 epoch(s)
+
+T ┬ Epoch 19/20: 100%|██████████████████████████████████████████| 7313/7313 [10:13<00:00, 11.93it/s]
+  ├ Train Loss: 0.1884, Train Accuracy: 97.92%
+  ├ Precision: 0.9782, Recall: 0.9486
+  ├ F1: 0.9632, F-beta: 0.9721
+  └ Pos accuracy: 94.86%, Neg accuracy: 99.15%
+V ┬ Epoch 19/20: 100%|█████████████████████████████████████████| 2366/2366 [00:09<00:00, 259.19it/s]
+  ├ Val Loss: 4.7386, Val Accuracy: 90.91%
+  ├ Precision: 0.8537, Recall: 0.7679
+  ├ F1: 0.8085, F-beta: 0.8351 mAP: 0.8560
+  └ Pos accuracy: 76.79%, Neg accuracy: 95.61%
+  → No improvement for 3 epoch(s)
+
+T ┬ Epoch 20/20: 100%|██████████████████████████████████████████| 7313/7313 [08:34<00:00, 14.22it/s]
+  ├ Train Loss: 0.1798, Train Accuracy: 97.89%
+  ├ Precision: 0.9780, Recall: 0.9478
+  ├ F1: 0.9626, F-beta: 0.9718
+  └ Pos accuracy: 94.78%, Neg accuracy: 99.14%
+V ┬ Epoch 20/20: 100%|█████████████████████████████████████████| 2366/2366 [00:04<00:00, 512.35it/s]
+  ├ Val Loss: 3.7750, Val Accuracy: 91.37%
+  ├ Precision: 0.8798, Recall: 0.7582
+  ├ F1: 0.8145, F-beta: 0.8524 mAP: 0.8616
+  └ Pos accuracy: 75.82%, Neg accuracy: 96.55%
+  → No improvement for 4 epoch(s)
+
+Restored best model from round 7 (f1=0.8151)
+
+============================================================
+Bootstrap Round 8/10
+============================================================
+
+============================================================
+Mining hard negatives from 1000 images...
+Score threshold: 0.0000
+============================================================
+Mining hard negatives: 100%|████████████████████████████████████| 1000/1000 [07:14<00:00,  2.30it/s]
+Mined 50000 candidates, heap contains 100000 hardest
+
+  Before merge:
+  ├ Main heap: 100000 hard negatives
+  └ New candidates: 50000
+      Main heap score range: [0.0000, 1.0000]
+
+  🔄 Re-scoring existing negatives with current model...
+  Re-scoring 100000 existing negatives...
+    └ Average score decrease: 0.0117
+  Merging 50000 new candidates...
+    └ Dropping 50000 negatives that are too easy
+  ✓ Final heap: 100000 negatives
+    Score range: [0.0000, 1.0000], mean: 0.0170
+  Training with 100000 mined + 67005 initial negatives
+  Pos:Neg ratio: 1:2.5
+Training on 234010 samples (pos: 67005, neg: 167005)
+Continuing from previous round's weights...
+T ┬ Epoch 1/20: 100%|███████████████████████████████████████████| 7313/7313 [06:46<00:00, 17.98it/s]
+  ├ Train Loss: 0.2647, Train Accuracy: 96.85%
+  ├ Precision: 0.9619, Recall: 0.9267
+  ├ F1: 0.9440, F-beta: 0.9546
+  └ Pos accuracy: 92.67%, Neg accuracy: 98.53%
+V ┬ Epoch 1/20: 100%|██████████████████████████████████████████| 2366/2366 [00:11<00:00, 205.62it/s]
+  ├ Val Loss: 4.1889, Val Accuracy: 91.25%
+  ├ Precision: 0.8785, Recall: 0.7542
+  ├ F1: 0.8116, F-beta: 0.8505 mAP: 0.8665
+  └ Pos accuracy: 75.42%, Neg accuracy: 96.52%
+  → New best f1: 0.8116
+
+T ┬ Epoch 2/20: 100%|███████████████████████████████████████████| 7313/7313 [07:02<00:00, 17.31it/s]
+  ├ Train Loss: 0.2344, Train Accuracy: 97.12%
+  ├ Precision: 0.9660, Recall: 0.9324
+  ├ F1: 0.9489, F-beta: 0.9591
+  └ Pos accuracy: 93.24%, Neg accuracy: 98.68%
+V ┬ Epoch 2/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 557.25it/s]
+  ├ Val Loss: 2.4995, Val Accuracy: 91.20%
+  ├ Precision: 0.8840, Recall: 0.7460
+  ├ F1: 0.8092, F-beta: 0.8525 mAP: 0.8813
+  └ Pos accuracy: 74.60%, Neg accuracy: 96.74%
+  → No improvement for 1 epoch(s)
+
+T ┬ Epoch 3/20: 100%|███████████████████████████████████████████| 7313/7313 [07:06<00:00, 17.16it/s]
+  ├ Train Loss: 0.2141, Train Accuracy: 97.33%
+  ├ Precision: 0.9692, Recall: 0.9364
+  ├ F1: 0.9526, F-beta: 0.9625
+  └ Pos accuracy: 93.64%, Neg accuracy: 98.81%
+V ┬ Epoch 3/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 554.62it/s]
+  ├ Val Loss: 3.9056, Val Accuracy: 91.32%
+  ├ Precision: 0.8754, Recall: 0.7613
+  ├ F1: 0.8144, F-beta: 0.8499 mAP: 0.8638
+  └ Pos accuracy: 76.13%, Neg accuracy: 96.39%
+  → New best f1: 0.8144
+
+T ┬ Epoch 4/20: 100%|███████████████████████████████████████████| 7313/7313 [07:05<00:00, 17.21it/s]
+  ├ Train Loss: 0.2156, Train Accuracy: 97.43%
+  ├ Precision: 0.9696, Recall: 0.9398
+  ├ F1: 0.9545, F-beta: 0.9635
+  └ Pos accuracy: 93.98%, Neg accuracy: 98.82%
+V ┬ Epoch 4/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 540.18it/s]
+  ├ Val Loss: 1.8425, Val Accuracy: 91.15%
+  ├ Precision: 0.8765, Recall: 0.7518
+  ├ F1: 0.8094, F-beta: 0.8484 mAP: 0.8705
+  └ Pos accuracy: 75.18%, Neg accuracy: 96.47%
+  → No improvement for 1 epoch(s)
+
+T ┬ Epoch 5/20: 100%|███████████████████████████████████████████| 7313/7313 [07:14<00:00, 16.85it/s]
+  ├ Train Loss: 0.2046, Train Accuracy: 97.50%
+  ├ Precision: 0.9706, Recall: 0.9411
+  ├ F1: 0.9556, F-beta: 0.9645
+  └ Pos accuracy: 94.11%, Neg accuracy: 98.86%
+V ┬ Epoch 5/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 562.11it/s]
+  ├ Val Loss: 3.3880, Val Accuracy: 90.82%
+  ├ Precision: 0.8346, Recall: 0.7892
+  ├ F1: 0.8113, F-beta: 0.8251 mAP: 0.8653
+  └ Pos accuracy: 78.92%, Neg accuracy: 94.79%
+  → No improvement for 2 epoch(s)
+
+T ┬ Epoch 6/20: 100%|███████████████████████████████████████████| 7313/7313 [07:10<00:00, 16.99it/s]
+  ├ Train Loss: 0.2065, Train Accuracy: 97.48%
+  ├ Precision: 0.9700, Recall: 0.9410
+  ├ F1: 0.9553, F-beta: 0.9641
+  └ Pos accuracy: 94.10%, Neg accuracy: 98.83%
+V ┬ Epoch 6/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 560.22it/s]
+  ├ Val Loss: 2.9373, Val Accuracy: 91.06%
+  ├ Precision: 0.8642, Recall: 0.7623
+  ├ F1: 0.8101, F-beta: 0.8417 mAP: 0.8608
+  └ Pos accuracy: 76.23%, Neg accuracy: 96.01%
+  → No improvement for 3 epoch(s)
+
+T ┬ Epoch 7/20: 100%|███████████████████████████████████████████| 7313/7313 [07:30<00:00, 16.24it/s]
+  ├ Train Loss: 0.2088, Train Accuracy: 97.59%
+  ├ Precision: 0.9730, Recall: 0.9420
+  ├ F1: 0.9572, F-beta: 0.9666
+  └ Pos accuracy: 94.20%, Neg accuracy: 98.95%
+V ┬ Epoch 7/20: 100%|██████████████████████████████████████████| 2366/2366 [00:09<00:00, 261.81it/s]
+  ├ Val Loss: 3.6415, Val Accuracy: 90.91%
+  ├ Precision: 0.8481, Recall: 0.7753
+  ├ F1: 0.8101, F-beta: 0.8324 mAP: 0.8670
+  └ Pos accuracy: 77.53%, Neg accuracy: 95.37%
+  → No improvement for 4 epoch(s)
+
+T ┬ Epoch 8/20: 100%|███████████████████████████████████████████| 7313/7313 [09:31<00:00, 12.79it/s]
+  ├ Train Loss: 0.1773, Train Accuracy: 97.69%
+  ├ Precision: 0.9740, Recall: 0.9447
+  ├ F1: 0.9591, F-beta: 0.9680
+  └ Pos accuracy: 94.47%, Neg accuracy: 98.99%
+V ┬ Epoch 8/20: 100%|██████████████████████████████████████████| 2366/2366 [00:07<00:00, 315.75it/s]
+  ├ Val Loss: 5.9168, Val Accuracy: 90.91%
+  ├ Precision: 0.8404, Recall: 0.7856
+  ├ F1: 0.8121, F-beta: 0.8289 mAP: 0.8495
+  └ Pos accuracy: 78.56%, Neg accuracy: 95.03%
+  → No improvement for 5 epoch(s)
+
+Early stopping at epoch 8
+Restored best model from round 8 (f1=0.8144)
+
+============================================================
+Bootstrap Round 9/10
+============================================================
+
+============================================================
+Mining hard negatives from 1000 images...
+Score threshold: 0.0000
+============================================================
+Mining hard negatives: 100%|████████████████████████████████████| 1000/1000 [16:00<00:00,  1.04it/s]
+Mined 50000 candidates, heap contains 100000 hardest
+
+  Before merge:
+  ├ Main heap: 100000 hard negatives
+  └ New candidates: 50000
+      Main heap score range: [0.0000, 1.0000]
+
+  🔄 Re-scoring existing negatives with current model...
+  Re-scoring 100000 existing negatives...
+    └ Average score decrease: 0.0170
+  Merging 50000 new candidates...
+    └ Dropping 50000 negatives that are too easy
+  ✓ Final heap: 100000 negatives
+    Score range: [0.0000, 1.0000], mean: 0.0231
+  Training with 100000 mined + 67005 initial negatives
+  Pos:Neg ratio: 1:2.5
+Training on 234010 samples (pos: 67005, neg: 167005)
+Continuing from previous round's weights...
+T ┬ Epoch 1/20: 100%|███████████████████████████████████████████| 7313/7313 [08:31<00:00, 14.29it/s]
+  ├ Train Loss: 0.2535, Train Accuracy: 96.78%
+  ├ Precision: 0.9592, Recall: 0.9268
+  ├ F1: 0.9427, F-beta: 0.9526
+  └ Pos accuracy: 92.68%, Neg accuracy: 98.42%
+V ┬ Epoch 1/20: 100%|██████████████████████████████████████████| 2366/2366 [00:07<00:00, 321.35it/s]
+  ├ Val Loss: 4.5334, Val Accuracy: 91.15%
+  ├ Precision: 0.9011, Recall: 0.7258
+  ├ F1: 0.8040, F-beta: 0.8596 mAP: 0.8710
+  └ Pos accuracy: 72.58%, Neg accuracy: 97.35%
+  → New best f1: 0.8040
+
+T ┬ Epoch 2/20: 100%|███████████████████████████████████████████| 7313/7313 [08:40<00:00, 14.04it/s]x
+  ├ Train Loss: 0.2477, Train Accuracy: 96.95%
+  ├ Precision: 0.9618, Recall: 0.9302
+  ├ F1: 0.9458, F-beta: 0.9553
+  └ Pos accuracy: 93.02%, Neg accuracy: 98.52%
+V ┬ Epoch 2/20: 100%|██████████████████████████████████████████| 2366/2366 [00:07<00:00, 309.48it/s]
+  ├ Val Loss: 2.9677, Val Accuracy: 91.17%
+  ├ Precision: 0.8964, Recall: 0.7314
+  ├ F1: 0.8055, F-beta: 0.8577 mAP: 0.8744
+  └ Pos accuracy: 73.14%, Neg accuracy: 97.18%
+  → New best f1: 0.8055
+
+T ┬ Epoch 3/20: 100%|███████████████████████████████████████████| 7313/7313 [09:01<00:00, 13.51it/s]
+  ├ Train Loss: 0.2150, Train Accuracy: 97.20%
+  ├ Precision: 0.9663, Recall: 0.9347
+  ├ F1: 0.9502, F-beta: 0.9598
+  └ Pos accuracy: 93.47%, Neg accuracy: 98.69%
+V ┬ Epoch 3/20: 100%|██████████████████████████████████████████| 2366/2366 [00:07<00:00, 319.43it/s]
+  ├ Val Loss: 3.4866, Val Accuracy: 91.14%
+  ├ Precision: 0.8945, Recall: 0.7319
+  ├ F1: 0.8051, F-beta: 0.8565 mAP: 0.8743
+  └ Pos accuracy: 73.19%, Neg accuracy: 97.12%
+  → No improvement for 1 epoch(s)
+
+T ┬ Epoch 4/20: 100%|███████████████████████████████████████████| 7313/7313 [09:06<00:00, 13.39it/s]
+  ├ Train Loss: 0.2177, Train Accuracy: 97.22%
+  ├ Precision: 0.9675, Recall: 0.9344
+  ├ F1: 0.9507, F-beta: 0.9607
+  └ Pos accuracy: 93.44%, Neg accuracy: 98.74%
+V ┬ Epoch 4/20: 100%|██████████████████████████████████████████| 2366/2366 [00:09<00:00, 248.26it/s]
+  ├ Val Loss: 2.6306, Val Accuracy: 91.26%
+  ├ Precision: 0.9099, Recall: 0.7219
+  ├ F1: 0.8050, F-beta: 0.8648 mAP: 0.8771
+  └ Pos accuracy: 72.19%, Neg accuracy: 97.62%
+  → No improvement for 2 epoch(s)
+
+T ┬ Epoch 5/20: 100%|███████████████████████████████████████████| 7313/7313 [09:22<00:00, 12.99it/s]
+  ├ Train Loss: 0.2094, Train Accuracy: 97.33%
+  ├ Precision: 0.9684, Recall: 0.9371
+  ├ F1: 0.9525, F-beta: 0.9620
+  └ Pos accuracy: 93.71%, Neg accuracy: 98.77%
+V ┬ Epoch 5/20: 100%|██████████████████████████████████████████| 2366/2366 [00:07<00:00, 317.39it/s]
+  ├ Val Loss: 6.6479, Val Accuracy: 91.15%
+  ├ Precision: 0.8751, Recall: 0.7533
+  ├ F1: 0.8097, F-beta: 0.8477 mAP: 0.8686
+  └ Pos accuracy: 75.33%, Neg accuracy: 96.42%
+  → New best f1: 0.8097
+
+T ┬ Epoch 6/20: 100%|███████████████████████████████████████████| 7313/7313 [09:14<00:00, 13.19it/s]
+  ├ Train Loss: 0.2237, Train Accuracy: 97.34%
+  ├ Precision: 0.9663, Recall: 0.9400
+  ├ F1: 0.9530, F-beta: 0.9610
+  └ Pos accuracy: 94.00%, Neg accuracy: 98.69%
+V ┬ Epoch 6/20: 100%|██████████████████████████████████████████| 2366/2366 [00:07<00:00, 308.93it/s]
+  ├ Val Loss: 6.8279, Val Accuracy: 91.16%
+  ├ Precision: 0.8809, Recall: 0.7476
+  ├ F1: 0.8088, F-beta: 0.8505 mAP: 0.8589
+  └ Pos accuracy: 74.76%, Neg accuracy: 96.63%
+  → No improvement for 1 epoch(s)
+
+T ┬ Epoch 7/20: 100%|███████████████████████████████████████████| 7313/7313 [09:30<00:00, 12.83it/s]
+  ├ Train Loss: 0.1943, Train Accuracy: 97.48%
+  ├ Precision: 0.9707, Recall: 0.9406
+  ├ F1: 0.9554, F-beta: 0.9645
+  └ Pos accuracy: 94.06%, Neg accuracy: 98.86%
+V ┬ Epoch 7/20: 100%|██████████████████████████████████████████| 2366/2366 [00:07<00:00, 319.07it/s]
+  ├ Val Loss: 3.8080, Val Accuracy: 90.98%
+  ├ Precision: 0.8637, Recall: 0.7590
+  ├ F1: 0.8079, F-beta: 0.8405 mAP: 0.8558
+  └ Pos accuracy: 75.90%, Neg accuracy: 96.01%
+  → No improvement for 2 epoch(s)
+
+T ┬ Epoch 8/20: 100%|███████████████████████████████████████████| 7313/7313 [09:21<00:00, 13.04it/s]
+  ├ Train Loss: 0.2083, Train Accuracy: 97.47%
+  ├ Precision: 0.9723, Recall: 0.9383
+  ├ F1: 0.9550, F-beta: 0.9653
+  └ Pos accuracy: 93.83%, Neg accuracy: 98.93%
+V ┬ Epoch 8/20: 100%|██████████████████████████████████████████| 2366/2366 [00:07<00:00, 297.45it/s]
+  ├ Val Loss: 4.6180, Val Accuracy: 91.35%
+  ├ Precision: 0.9039, Recall: 0.7317
+  ├ F1: 0.8087, F-beta: 0.8633 mAP: 0.8753
+  └ Pos accuracy: 73.17%, Neg accuracy: 97.41%
+  → No improvement for 3 epoch(s)
+
+T ┬ Epoch 9/20: 100%|███████████████████████████████████████████| 7313/7313 [09:32<00:00, 12.77it/s]
+  ├ Train Loss: 0.1936, Train Accuracy: 97.56%
+  ├ Precision: 0.9731, Recall: 0.9407
+  ├ F1: 0.9566, F-beta: 0.9665
+  └ Pos accuracy: 94.07%, Neg accuracy: 98.96%
+V ┬ Epoch 9/20: 100%|██████████████████████████████████████████| 2366/2366 [00:07<00:00, 320.76it/s]
+  ├ Val Loss: 3.4500, Val Accuracy: 91.17%
+  ├ Precision: 0.8621, Recall: 0.7698
+  ├ F1: 0.8133, F-beta: 0.8419 mAP: 0.8546
+  └ Pos accuracy: 76.98%, Neg accuracy: 95.90%
+  → New best f1: 0.8133
+
+T ┬ Epoch 10/20: 100%|██████████████████████████████████████████| 7313/7313 [09:29<00:00, 12.84it/s]
+  ├ Train Loss: 0.2132, Train Accuracy: 97.61%
+  ├ Precision: 0.9723, Recall: 0.9434
+  ├ F1: 0.9576, F-beta: 0.9664
+  └ Pos accuracy: 94.34%, Neg accuracy: 98.92%
+V ┬ Epoch 10/20: 100%|█████████████████████████████████████████| 2366/2366 [00:07<00:00, 314.09it/s]
+  ├ Val Loss: 5.2641, Val Accuracy: 91.36%
+  ├ Precision: 0.8977, Recall: 0.7385
+  ├ F1: 0.8103, F-beta: 0.8606 mAP: 0.8615
+  └ Pos accuracy: 73.85%, Neg accuracy: 97.20%
+  → No improvement for 1 epoch(s)
+
+T ┬ Epoch 11/20: 100%|██████████████████████████████████████████| 7313/7313 [09:35<00:00, 12.71it/s]
+  ├ Train Loss: 0.2135, Train Accuracy: 97.71%
+  ├ Precision: 0.9744, Recall: 0.9447
+  ├ F1: 0.9593, F-beta: 0.9683
+  └ Pos accuracy: 94.47%, Neg accuracy: 99.00%
+V ┬ Epoch 11/20: 100%|█████████████████████████████████████████| 2366/2366 [00:11<00:00, 211.05it/s]
+  ├ Val Loss: 5.2038, Val Accuracy: 91.35%
+  ├ Precision: 0.8941, Recall: 0.7416
+  ├ F1: 0.8108, F-beta: 0.8588 mAP: 0.8636
+  └ Pos accuracy: 74.16%, Neg accuracy: 97.07%
+  → No improvement for 2 epoch(s)
+
+T ┬ Epoch 12/20: 100%|████████████████████████████████████████| 7313/7313 [7:18:11<00:00,  3.60s/it]
+  ├ Train Loss: 0.1917, Train Accuracy: 97.73%
+  ├ Precision: 0.9746, Recall: 0.9453
+  ├ F1: 0.9597, F-beta: 0.9686
+  └ Pos accuracy: 94.53%, Neg accuracy: 99.01%
+V ┬ Epoch 12/20: 100%|█████████████████████████████████████████| 2366/2366 [00:08<00:00, 278.93it/s]
+  ├ Val Loss: 6.1525, Val Accuracy: 91.17%
+  ├ Precision: 0.8640, Recall: 0.7675
+  ├ F1: 0.8129, F-beta: 0.8428 mAP: 0.8549
+  └ Pos accuracy: 76.75%, Neg accuracy: 95.97%
+  → No improvement for 3 epoch(s)
+
+T ┬ Epoch 13/20: 100%|███████████████████████████████████████| 7313/7313 [-7:07:36<00:00, -0.30it/s]
+  ├ Train Loss: 0.1964, Train Accuracy: 97.78%
+  ├ Precision: 0.9754, Recall: 0.9462
+  ├ F1: 0.9606, F-beta: 0.9694
+  └ Pos accuracy: 94.62%, Neg accuracy: 99.04%
+V ┬ Epoch 13/20: 100%|█████████████████████████████████████████| 2366/2366 [00:04<00:00, 531.68it/s]
+  ├ Val Loss: 4.1337, Val Accuracy: 91.38%
+  ├ Precision: 0.9000, Recall: 0.7369
+  ├ F1: 0.8103, F-beta: 0.8619 mAP: 0.8716
+  └ Pos accuracy: 73.69%, Neg accuracy: 97.27%
+  → No improvement for 4 epoch(s)
+
+T ┬ Epoch 14/20: 100%|██████████████████████████████████████████| 7313/7313 [07:20<00:00, 16.60it/s]
+  ├ Train Loss: 0.1835, Train Accuracy: 97.81%
+  ├ Precision: 0.9757, Recall: 0.9470
+  ├ F1: 0.9611, F-beta: 0.9698
+  └ Pos accuracy: 94.70%, Neg accuracy: 99.06%
+V ┬ Epoch 14/20: 100%|█████████████████████████████████████████| 2366/2366 [00:04<00:00, 542.24it/s]
+  ├ Val Loss: 2.2666, Val Accuracy: 91.30%
+  ├ Precision: 0.8802, Recall: 0.7545
+  ├ F1: 0.8125, F-beta: 0.8518 mAP: 0.8565
+  └ Pos accuracy: 75.45%, Neg accuracy: 96.58%
+  → No improvement for 5 epoch(s)
+
+Early stopping at epoch 14
+Restored best model from round 9 (f1=0.8133)
+
+============================================================
+Bootstrap Round 10/10
+============================================================
+
+============================================================
+Mining hard negatives from 1000 images...
+Score threshold: 0.0000
+============================================================
+Mining hard negatives: 100%|████████████████████████████████████| 1000/1000 [04:41<00:00,  3.55it/s]
+Mined 50000 candidates, heap contains 100000 hardest
+
+  Before merge:
+  ├ Main heap: 100000 hard negatives
+  └ New candidates: 50000
+      Main heap score range: [0.0000, 1.0000]
+
+  🔄 Re-scoring existing negatives with current model...
+  Re-scoring 100000 existing negatives...
+    └ Average score decrease: 0.0231
+  Merging 50000 new candidates...
+    └ Dropping 50000 negatives that are too easy
+  ✓ Final heap: 100000 negatives
+    Score range: [0.0000, 1.0000], mean: 0.0103
+  Training with 100000 mined + 67005 initial negatives
+  Pos:Neg ratio: 1:2.5
+Training on 234010 samples (pos: 67005, neg: 167005)
+Continuing from previous round's weights...
+T ┬ Epoch 1/20: 100%|███████████████████████████████████████████| 7313/7313 [06:52<00:00, 17.72it/s]
+  ├ Train Loss: 0.2357, Train Accuracy: 97.50%
+  ├ Precision: 0.9697, Recall: 0.9423
+  ├ F1: 0.9558, F-beta: 0.9641
+  └ Pos accuracy: 94.23%, Neg accuracy: 98.82%
+V ┬ Epoch 1/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 524.23it/s]
+  ├ Val Loss: 2.4908, Val Accuracy: 91.17%
+  ├ Precision: 0.8677, Recall: 0.7631
+  ├ F1: 0.8121, F-beta: 0.8446 mAP: 0.8681
+  └ Pos accuracy: 76.31%, Neg accuracy: 96.12%
+  → New best f1: 0.8121
+
+T ┬ Epoch 2/20: 100%|███████████████████████████████████████████| 7313/7313 [06:58<00:00, 17.49it/s]
+  ├ Train Loss: 0.2012, Train Accuracy: 97.56%
+  ├ Precision: 0.9697, Recall: 0.9443
+  ├ F1: 0.9569, F-beta: 0.9645
+  └ Pos accuracy: 94.43%, Neg accuracy: 98.82%
+V ┬ Epoch 2/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 530.40it/s]
+  ├ Val Loss: 1.1704, Val Accuracy: 91.33%
+  ├ Precision: 0.9197, Recall: 0.7156
+  ├ F1: 0.8049, F-beta: 0.8701 mAP: 0.8877
+  └ Pos accuracy: 71.56%, Neg accuracy: 97.92%
+  → No improvement for 1 epoch(s)
+
+T ┬ Epoch 3/20: 100%|███████████████████████████████████████████| 7313/7313 [07:01<00:00, 17.36it/s]
+  ├ Train Loss: 0.2201, Train Accuracy: 97.71%
+  ├ Precision: 0.9727, Recall: 0.9468
+  ├ F1: 0.9596, F-beta: 0.9674
+  └ Pos accuracy: 94.68%, Neg accuracy: 98.93%
+V ┬ Epoch 3/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 529.94it/s]
+  ├ Val Loss: 4.0349, Val Accuracy: 91.26%
+  ├ Precision: 0.8986, Recall: 0.7330
+  ├ F1: 0.8074, F-beta: 0.8598 mAP: 0.8708
+  └ Pos accuracy: 73.30%, Neg accuracy: 97.24%
+  → No improvement for 2 epoch(s)
+
+T ┬ Epoch 4/20: 100%|███████████████████████████████████████████| 7313/7313 [07:11<00:00, 16.96it/s]
+  ├ Train Loss: 0.2106, Train Accuracy: 97.80%
+  ├ Precision: 0.9751, Recall: 0.9474
+  ├ F1: 0.9610, F-beta: 0.9694
+  └ Pos accuracy: 94.74%, Neg accuracy: 99.03%
+V ┬ Epoch 4/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 533.36it/s]
+  ├ Val Loss: 5.3099, Val Accuracy: 91.42%
+  ├ Precision: 0.8860, Recall: 0.7537
+  ├ F1: 0.8145, F-beta: 0.8559 mAP: 0.8528
+  └ Pos accuracy: 75.37%, Neg accuracy: 96.77%
+  → New best f1: 0.8145
+
+T ┬ Epoch 5/20: 100%|███████████████████████████████████████████| 7313/7313 [07:14<00:00, 16.82it/s]
+  ├ Train Loss: 0.1849, Train Accuracy: 97.79%
+  ├ Precision: 0.9753, Recall: 0.9467
+  ├ F1: 0.9608, F-beta: 0.9694
+  └ Pos accuracy: 94.67%, Neg accuracy: 99.04%
+V ┬ Epoch 5/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 537.01it/s]
+  ├ Val Loss: 4.2767, Val Accuracy: 91.29%
+  ├ Precision: 0.8929, Recall: 0.7403
+  ├ F1: 0.8095, F-beta: 0.8576 mAP: 0.8714
+  └ Pos accuracy: 74.03%, Neg accuracy: 97.04%
+  → No improvement for 1 epoch(s)
+
+T ┬ Epoch 6/20: 100%|███████████████████████████████████████████| 7313/7313 [07:15<00:00, 16.78it/s]
+  ├ Train Loss: 0.1850, Train Accuracy: 97.92%
+  ├ Precision: 0.9763, Recall: 0.9504
+  ├ F1: 0.9632, F-beta: 0.9710
+  └ Pos accuracy: 95.04%, Neg accuracy: 99.08%
+V ┬ Epoch 6/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 524.72it/s]
+  ├ Val Loss: 2.9553, Val Accuracy: 90.99%
+  ├ Precision: 0.8751, Recall: 0.7460
+  ├ F1: 0.8054, F-beta: 0.8458 mAP: 0.8606
+  └ Pos accuracy: 74.60%, Neg accuracy: 96.45%
+  → No improvement for 2 epoch(s)
+
+T ┬ Epoch 7/20: 100%|███████████████████████████████████████████| 7313/7313 [07:24<00:00, 16.46it/s]
+  ├ Train Loss: 0.1772, Train Accuracy: 97.90%
+  ├ Precision: 0.9776, Recall: 0.9485
+  ├ F1: 0.9628, F-beta: 0.9716
+  └ Pos accuracy: 94.85%, Neg accuracy: 99.13%
+V ┬ Epoch 7/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 544.25it/s]
+  ├ Val Loss: 2.0998, Val Accuracy: 91.28%
+  ├ Precision: 0.9046, Recall: 0.7278
+  ├ F1: 0.8067, F-beta: 0.8627 mAP: 0.8721
+  └ Pos accuracy: 72.78%, Neg accuracy: 97.44%
+  → No improvement for 3 epoch(s)
+
+T ┬ Epoch 8/20: 100%|███████████████████████████████████████████| 7313/7313 [07:09<00:00, 17.02it/s]
+  ├ Train Loss: 0.2087, Train Accuracy: 97.93%
+  ├ Precision: 0.9781, Recall: 0.9489
+  ├ F1: 0.9633, F-beta: 0.9721
+  └ Pos accuracy: 94.89%, Neg accuracy: 99.15%
+V ┬ Epoch 8/20: 100%|██████████████████████████████████████████| 2366/2366 [00:05<00:00, 421.07it/s]
+  ├ Val Loss: 4.3012, Val Accuracy: 91.23%
+  ├ Precision: 0.8837, Recall: 0.7474
+  ├ F1: 0.8099, F-beta: 0.8526 mAP: 0.8654
+  └ Pos accuracy: 74.74%, Neg accuracy: 96.72%
+  → No improvement for 4 epoch(s)
+
+T ┬ Epoch 9/20: 100%|███████████████████████████████████████████| 7313/7313 [07:16<00:00, 16.77it/s]
+  ├ Train Loss: 0.1836, Train Accuracy: 97.93%
+  ├ Precision: 0.9778, Recall: 0.9491
+  ├ F1: 0.9633, F-beta: 0.9720
+  └ Pos accuracy: 94.91%, Neg accuracy: 99.14%
+V ┬ Epoch 9/20: 100%|██████████████████████████████████████████| 2366/2366 [00:04<00:00, 539.11it/s]
+  ├ Val Loss: 5.5131, Val Accuracy: 91.20%
+  ├ Precision: 0.8668, Recall: 0.7658
+  ├ F1: 0.8132, F-beta: 0.8445 mAP: 0.8471
+  └ Pos accuracy: 76.58%, Neg accuracy: 96.08%
+  → No improvement for 5 epoch(s)
+
+Early stopping at epoch 9
+Restored best model from round 10 (f1=0.8145)
+
+============================================================
+Final model: best f1=0.8154
+============================================================
+
+Bootstrap training complete!
+Final validation accuracy: 91.20%
+Model saved to models/acf_w64x64_h1024_512_256_128_r16_lr0.001_e20.pkl
+
+Training complete! Model saved to models/acf_w64x64_h1024_512_256_128_r16_lr0.001_e20.pkl

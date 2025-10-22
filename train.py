@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 import argparse
 import os
-from acf.model import ACFDetector
+from acf.model import (
+    ACFDetector,
+    MemoryEfficientBootstrapWithHeap,
+)
 
 
 def main():
@@ -117,6 +120,18 @@ def main():
         default=3,
         help="Number of negatives per one positive (default: 3)",
     )
+    parser.add_argument(
+        "--bootstrap_rounds",
+        type=int,
+        default=3,
+        help="Number of bootstrap rounds (default: 3)",
+    )
+    parser.add_argument(
+        "--num_mining_images",
+        type=int,
+        default=500,
+        help="Number of images to be mined per round (default: 500)",
+    )
 
     args = parser.parse_args()
 
@@ -173,11 +188,20 @@ def main():
         val_image_base_dir=args.val_image_dir,
         max_val_images=args.max_val_images,
     )
-    detector.train(
-        X_train, y_train, X_val, y_val, early_stopping_patience=args.patience
+    bootstrap = MemoryEfficientBootstrapWithHeap(detector)
+    bootstrap.train_with_bootstrap(
+        X_train,
+        y_train,
+        X_val,
+        y_val,
+        early_stopping_patience=args.patience,
+        mining_annotation_file=args.annotation_file,
+        mining_image_base_dir=args.image_dir,
+        num_mining_images=args.num_mining_images,
+        bootstrap_rounds=args.bootstrap_rounds,
     )
 
-    detector.save(args.output_model)
+    bootstrap.detector.save(args.output_model)
     print(f"\nTraining complete! Model saved to {args.output_model}")
 
 
