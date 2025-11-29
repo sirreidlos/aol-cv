@@ -16,7 +16,6 @@ class WIDERFACEConfig:
     image_base_dir: str
     window_size: Tuple[int, int] = (64, 64)
     feature_resolution: int = 8
-    scales: List[float] = field(default_factory=lambda: [0.5, 0.75, 1.0, 1.25, 1.5])
     pos_iou_thresh: float = 0.5
     neg_iou_thresh: float = 0.3
     hard_neg_iou_range: Tuple[float, float] = (0.1, 0.3)
@@ -73,7 +72,7 @@ class WIDERFACEDataset(Dataset):
         return annotations
 
     def _allowed_attribute(self, values: List[int]) -> bool:
-        x, y, w, h = values[:4]
+        _, _, w, h = values[:4]
         blur, expression, illumination, invalid, occlusion, pose = values[4:10]
 
         if w <= 0 or h <= 0:
@@ -116,7 +115,7 @@ class WIDERFACEDataset(Dataset):
 
     def _build_sample_index(
         self,
-    ) -> List[Tuple[str, int, Tuple[int, int, int, int], int]]:
+    ) -> List[Tuple[str, Tuple[int, int, int, int], int]]:
         samples = []
         stride = min(self.config.window_size) // self.config.stride_divisor
 
@@ -135,65 +134,56 @@ class WIDERFACEDataset(Dataset):
             img_attributes = self.annotations[img_path]
             gt_boxes = img_attributes[:, :4]
 
-            for scale_idx, scale in enumerate(self.config.scales):
-                scaled_h = int(orig_h * scale)
-                scaled_w = int(orig_w * scale)
-                win_w, win_h = self.config.window_size
+            win_w, win_h = self.config.window_size
 
-                if scaled_h < win_h or scaled_w < win_w:
-                    continue
+            if orig_h < win_h or orig_w < win_w:
+                continue
 
-                scaled_gt_boxes = gt_boxes * scale
-                for gt_box in scaled_gt_boxes:
-                    x, y, w, h = gt_box
-                    if x >= 0 and y >= 0 and x + w <= scaled_w and y + h <= scaled_h:
-                        samples.append(
-                            (img_path, scale_idx, (int(x), int(y), int(w), int(h)), 1)
-                        )
+            for gt_box in gt_boxes:
+                x, y, w, h = gt_box
+                if x >= 0 and y >= 0 and x + w <= orig_w and y + h <= orig_h:
+                    samples.append((img_path, (int(x), int(y), int(w), int(h)), 1))
 
-                windows = self._generate_windows((scaled_h, scaled_w), stride)
+            windows = self._generate_windows((orig_h, orig_w), stride)
 
-                if len(windows) == 0:
-                    continue
+            if len(windows) == 0:
+                continue
 
-                windows_orig = windows / scale
+            iou_matrix = compute_iou_batch(windows, gt_boxes)
+            max_ious = np.max(iou_matrix, axis=1)
 
-                iou_matrix = compute_iou_batch(windows_orig, gt_boxes)
-                max_ious = np.max(iou_matrix, axis=1)
+            hard_neg_mask = (max_ious >= self.config.hard_neg_iou_range[0]) & (
+                max_ious < self.config.hard_neg_iou_range[1]
+            )
+            neg_mask = max_ious < self.config.neg_iou_thresh
 
-                hard_neg_mask = (max_ious >= self.config.hard_neg_iou_range[0]) & (
-                    max_ious < self.config.hard_neg_iou_range[1]
+            num_pos = len(gt_boxes)
+            num_neg_needed = num_pos * self.config.num_neg_per_pos
+
+            hard_neg_indices = np.where(hard_neg_mask)[0]
+            neg_indices = np.where(neg_mask)[0]
+
+            num_hard = min(len(hard_neg_indices), num_neg_needed // 2)
+            num_easy = num_neg_needed - num_hard
+
+            if len(hard_neg_indices) > num_hard:
+                hard_neg_indices = np.random.choice(
+                    hard_neg_indices, num_hard, replace=False
                 )
-                neg_mask = max_ious < self.config.neg_iou_thresh
 
-                num_pos = len(gt_boxes)
-                num_neg_needed = num_pos * self.config.num_neg_per_pos
+            if len(neg_indices) > num_easy:
+                neg_indices = np.random.choice(neg_indices, num_easy, replace=False)
 
-                hard_neg_indices = np.where(hard_neg_mask)[0]
-                neg_indices = np.where(neg_mask)[0]
-
-                num_hard = min(len(hard_neg_indices), num_neg_needed // 2)
-                num_easy = num_neg_needed - num_hard
-
-                if len(hard_neg_indices) > num_hard:
-                    hard_neg_indices = np.random.choice(
-                        hard_neg_indices, num_hard, replace=False
+            selected_negs = np.concatenate([hard_neg_indices, neg_indices])
+            for idx in selected_negs:
+                win = windows[idx]
+                samples.append(
+                    (
+                        img_path,
+                        (int(win[0]), int(win[1]), int(win[2]), int(win[3])),
+                        0,
                     )
-
-                if len(neg_indices) > num_easy:
-                    neg_indices = np.random.choice(neg_indices, num_easy, replace=False)
-
-                selected_negs = np.concatenate([hard_neg_indices, neg_indices])
-                for idx in selected_negs:
-                    win = windows[idx]
-                    samples.append(
-                        (
-                            img_path,
-                            scale_idx,
-                            (int(win[0]), int(win[1]), int(win[2]), int(win[3])),
-                            0,
-                        )
-                    )
+                )
 
         print(f"Sample index built: {len(samples)} total samples")
         return samples
@@ -250,20 +240,13 @@ class WIDERFACEDataset(Dataset):
         features: [feature_resolution * feature_resolution * 10] flattened features
         label: 0 or 1 (negative or positive)
         """
-        img_path, scale_idx, window, label = self.samples[idx]
-        scale = self.config.scales[scale_idx]
+        img_path, window, label = self.samples[idx]
 
         full_path = os.path.join(self.config.image_base_dir, img_path)
         image = cv2.imread(full_path)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-        scaled_h = int(image.shape[0] * scale)
-        scaled_w = int(image.shape[1] * scale)
-        scaled_image = cv2.resize(
-            image, (scaled_w, scaled_h), interpolation=cv2.INTER_LINEAR
-        )
-
-        channels = compute_channels(scaled_image)
+        channels = compute_channels(image)
         features = self._extract_features(channels, window)
 
         return torch.from_numpy(features).float(), torch.tensor(label, dtype=torch.long)
