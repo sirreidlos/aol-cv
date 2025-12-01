@@ -5,7 +5,7 @@ from tqdm import tqdm
 import torch
 
 from acf.model import ACFDetector
-from .channels import compute_channel_pyramid
+from .channels import compute_channels, compute_channel_pyramid
 from .preprocessing import compute_iou, generate_sliding_windows
 
 
@@ -53,7 +53,31 @@ def non_max_suppression(
     return keep
 
 
-def detect_multiscale(
+def compute_fast_feature_pyramid(
+    channels: np.ndarray, scales: List[float], window_size: Tuple[int, int]
+) -> List[Tuple[np.ndarray, float]]:
+    pyramid = []
+    h, w = channels.shape[:2]
+    win_w, win_h = window_size
+
+    for scale in scales:
+        scaled_h, scaled_w = int(h * scale), int(w * scale)
+
+        if scaled_h < win_h or scaled_w < win_w:
+            continue
+
+        scaled_channels = np.zeros((scaled_h, scaled_w, 10), dtype=channels.dtype)
+        for c in range(10):
+            scaled_channels[..., c] = cv2.resize(
+                channels[..., c], (scaled_w, scaled_h), interpolation=cv2.INTER_LINEAR
+            )
+
+        pyramid.append((scaled_channels, scale))
+
+    return pyramid
+
+
+def detect_multiscale_fast(
     detector: ACFDetector,
     image: np.ndarray,
     scales=None,
@@ -62,9 +86,102 @@ def detect_multiscale(
     nms_threshold=0.3,
     batch_size=32,
 ) -> List[Tuple[int, int, int, int, float]]:
-    """
-    out: List of (x, y, w, h, score) tuples
-    """
+    def normalize_features(detector, X: np.ndarray) -> np.ndarray:
+        X = X.reshape(-1, detector.feature_resolution, detector.feature_resolution, 10)
+        X = (X - detector.mean) / detector.std
+        return X.reshape(
+            -1, detector.feature_resolution * detector.feature_resolution * 10
+        )
+
+    if not detector.trained:
+        raise ValueError("Detector must be trained before inference")
+
+    if scales is None:
+        scales = [0.5, 0.75, 1.0, 1.25, 1.5]
+
+    print("Computing channels for original image...")
+    channels = compute_channels(image)
+
+    print("Building fast feature pyramid...")
+    pyramid = compute_fast_feature_pyramid(channels, scales, detector.window_size)
+
+    detector.classifier.eval()
+
+    all_boxes = []
+    all_scores = []
+
+    for scaled_channels, scale in tqdm(pyramid, desc="Processing scales", unit="scale"):
+        h, w = scaled_channels.shape[:2]
+        win_w, win_h = detector.window_size
+
+        if h < win_h or w < win_w:
+            continue
+
+        windows = generate_sliding_windows((h, w), detector.window_size, stride)
+
+        for i in tqdm(
+            range(0, len(windows), batch_size),
+            desc=f"Scale {scale:.2f}",
+            unit="batch",
+            leave=False,
+        ):
+            batch_windows = windows[i : i + batch_size]
+            batch_features = []
+
+            for window in batch_windows:
+                features = detector.extract_features_from_channels(
+                    scaled_channels, window
+                )
+                batch_features.append(features)
+
+            if len(batch_features) == 0:
+                continue
+
+            features_array = np.array(batch_features, dtype=np.float32)
+            features_normalized = normalize_features(detector, features_array)
+            scores = detector.classifier.infer_batch(features_normalized)
+
+            for idx, window in enumerate(batch_windows):
+                score = scores[idx]
+                if score > score_threshold:
+                    x, y, win_w, win_h = window
+
+                    orig_x = int(x / scale)
+                    orig_y = int(y / scale)
+                    orig_w = int(win_w / scale)
+                    orig_h = int(win_h / scale)
+
+                    all_boxes.append([orig_x, orig_y, orig_w, orig_h])
+                    all_scores.append(float(score))
+
+    if len(all_boxes) > 0:
+        keep_indices = non_max_suppression(all_boxes, all_scores, nms_threshold)
+
+        detections = []
+        for idx in keep_indices:
+            box = all_boxes[idx]
+            score = all_scores[idx]
+            detections.append((*box, score))
+
+        return detections
+
+    return []
+
+
+def detect_multiscale(
+    detector: ACFDetector,
+    image: np.ndarray,
+    scales=None,
+    stride=8,
+    score_threshold=0.5,
+    nms_threshold=0.3,
+    batch_size=32,
+    use_fast_pyramid=True,
+) -> List[Tuple[int, int, int, int, float]]:
+    if use_fast_pyramid:
+        return detect_multiscale_fast(
+            detector, image, scales, stride, score_threshold, nms_threshold, batch_size
+        )
 
     if not detector.trained:
         raise ValueError("Detector must be trained before inference")
@@ -98,7 +215,6 @@ def detect_multiscale(
         desc="Detecting faces",
         unit="batch",
         ncols=100,
-        # disable=True,
     ):
         batch_windows = all_windows_data[i : i + batch_size]
         batch_features = []
@@ -126,12 +242,6 @@ def detect_multiscale(
         )
 
         scores = detector.classifier.infer_batch(features_numpy)
-
-        # print(
-        #     f"Score distribution: min={scores.min()}, max={scores.max()}, mean={scores.mean()}"
-        # )
-        # print(f"Scores > 0.5: {(scores > 0.5).sum()} / {len(scores)}")
-        # print(f"Scores > 0.9: {(scores > 0.9).sum()} / {len(scores)}")
 
         for idx, (window, scale) in enumerate(batch_metadata):
             score = scores[idx]

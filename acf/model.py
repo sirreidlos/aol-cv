@@ -2,14 +2,13 @@ import pickle
 import numpy as np
 from tqdm import tqdm
 import os
-from typing import Tuple, List
+from typing import Optional, Tuple, List
 
 from acf.mlp import MLPClassifier
 from acf.abstract_model import Model
 
 from .channels import (
     aggregate_channels,
-    compute_channel_pyramid,
     compute_channels,
     smooth_channels,
 )
@@ -68,14 +67,45 @@ class ACFDetector:
 
         self.trained = False
 
-    def extract_features_batch(self, scaled_img, batch_windows):
-        with ThreadPoolExecutor(max_workers=8) as executor:
-            features = list(
-                executor.map(
-                    lambda w: self.extract_features(scaled_img, w), batch_windows
+    def extract_features_batch(self, channels_or_image, batch_windows):
+        if len(channels_or_image.shape) == 3 and channels_or_image.shape[2] == 10:
+            channels = channels_or_image
+            with ThreadPoolExecutor(max_workers=8) as executor:
+                features = list(
+                    executor.map(
+                        lambda w: self.extract_features_from_channels(channels, w),
+                        batch_windows,
+                    )
                 )
-            )
+        else:
+            image = channels_or_image
+            with ThreadPoolExecutor(max_workers=8) as executor:
+                features = list(
+                    executor.map(
+                        lambda w: self.extract_features(image, w), batch_windows
+                    )
+                )
         return np.array(features, dtype=np.float32)
+
+    def extract_features_from_channels(
+        self, channels: np.ndarray, roi: Tuple[int, int, int, int]
+    ) -> np.ndarray:
+        x, y, w, h = roi
+        x, y, w, h = int(x), int(y), int(w), int(h)
+
+        patch = channels[y : y + h, x : x + w]
+        resized_to_window = cv2.resize(
+            patch, self.window_size, interpolation=cv2.INTER_LINEAR
+        )
+        smoothed = cv2.GaussianBlur(resized_to_window, (3, 3), sigmaX=1)
+
+        aggregated = cv2.resize(
+            smoothed,
+            (self.feature_resolution, self.feature_resolution),
+            interpolation=cv2.INTER_AREA,
+        )
+
+        return aggregated.flatten()
 
     def extract_features(
         self, image: np.ndarray, roi: Tuple[int, int, int, int]
@@ -148,13 +178,27 @@ class ACFDetector:
         val_annotation_file=None,
         val_image_base_dir=None,
         max_val_images=None,
+        acceptable_blur: Optional[List[int]] = None,
+        acceptable_expression: Optional[List[int]] = None,
+        acceptable_illumination: Optional[List[int]] = None,
+        acceptable_occlusion: Optional[List[int]] = None,
+        acceptable_pose: Optional[List[int]] = None,
+        filter_invalid: bool = True,
     ):
         """
         returns X_train, y_train, X_val, y_val
         """
 
         print("Loading annotations...")
-        annotations = parse_wider_face_annotation(annotation_file)
+        annotations = parse_wider_face_annotation(
+            annotation_file,
+            acceptable_blur=acceptable_blur,
+            acceptable_expression=acceptable_expression,
+            acceptable_illumination=acceptable_illumination,
+            acceptable_occlusion=acceptable_occlusion,
+            acceptable_pose=acceptable_pose,
+            filter_invalid=filter_invalid,
+        )
 
         image_paths = list(annotations.keys())
         if max_images:
@@ -162,7 +206,15 @@ class ACFDetector:
 
         num_val_images = 0
         if val_annotation_file and val_image_base_dir:
-            val_annotations = parse_wider_face_annotation(val_annotation_file)
+            val_annotations = parse_wider_face_annotation(
+                val_annotation_file,
+                acceptable_blur=acceptable_blur,
+                acceptable_expression=acceptable_expression,
+                acceptable_illumination=acceptable_illumination,
+                acceptable_occlusion=acceptable_occlusion,
+                acceptable_pose=acceptable_pose,
+                filter_invalid=filter_invalid,
+            )
             val_image_paths = list(val_annotations.keys())
             if max_val_images:
                 val_image_paths = val_image_paths[:max_val_images]
@@ -198,43 +250,36 @@ class ACFDetector:
 
         X_train = []
         y_train = []
-        training_scales = [0.5, 0.75, 1.0, 1.25, 1.5]
 
         for img_path in tqdm(image_paths, desc="Processing images", ncols=100):
             try:
                 image = load_image(img_path, image_base_dir)
                 gt_boxes = annotations[img_path]
-                pyramid = compute_channel_pyramid(image, training_scales)
 
                 pos_count = 0
                 neg_count = 0
                 pos_samples_needed = len(gt_boxes) * self.num_neg_per_pos
 
-                for scaled_img, scale in pyramid:
-                    h, w = scaled_img.shape[:2]
-                    win_w, win_h = self.window_size
+                h, w = image.shape[:2]
+                win_w, win_h = self.window_size
 
-                    if h < win_h or w < win_w:
-                        continue
-
+                if h >= win_h and w >= win_w:
                     pos_samples, neg_samples = extract_training_samples_sliding(
-                        scaled_img,
+                        image,
                         gt_boxes,
                         pos_iou_thresh=self.pos_iou_thresh,
                         neg_iou_thresh=self.neg_iou_thresh,
                         hard_neg_iou_range=self.hard_neg_iou_range,
                         num_neg_per_pos=self.num_neg_per_pos,
                         window_size=self.window_size,
-                        scale=scale,
+                        scale=1.0,
                     )
 
                     for pos_sample in pos_samples:
                         if pos_count >= pos_samples_needed:
                             break
 
-                        # px, py, pw, ph = pos_sample * scale
-                        # pos_sample = (int(px), int(py), int(pw), int(ph))
-                        features = self.extract_features(scaled_img, pos_sample)
+                        features = self.extract_features(image, pos_sample)
                         X_train.append(features)
                         y_train.append(1)
                         pos_count += 1
@@ -243,7 +288,7 @@ class ACFDetector:
                         if neg_count >= pos_count * self.num_neg_per_pos:
                             break
 
-                        features = self.extract_features(scaled_img, neg_sample)
+                        features = self.extract_features(image, neg_sample)
                         X_train.append(features)
                         y_train.append(0)
                         neg_count += 1
@@ -265,7 +310,15 @@ class ACFDetector:
             return X_train, y_train, X_val, y_val
 
         print("\nLoading validation data...")
-        val_annotations = parse_wider_face_annotation(val_annotation_file)
+        val_annotations = parse_wider_face_annotation(
+            val_annotation_file,
+            acceptable_blur=acceptable_blur,
+            acceptable_expression=acceptable_expression,
+            acceptable_illumination=acceptable_illumination,
+            acceptable_occlusion=acceptable_occlusion,
+            acceptable_pose=acceptable_pose,
+            filter_invalid=filter_invalid,
+        )
 
         print(f"Extracting features from {len(val_image_paths)} validation images...")
 
@@ -278,35 +331,31 @@ class ACFDetector:
             try:
                 image = load_image(img_path, val_image_base_dir)
                 gt_boxes = val_annotations[img_path]
-                pyramid = compute_channel_pyramid(image, training_scales)
 
                 pos_count = 0
                 neg_count = 0
                 pos_samples_needed = len(gt_boxes) * 3
 
-                for scaled_img, scale in pyramid:
-                    h, w = scaled_img.shape[:2]
-                    win_w, win_h = self.window_size
+                h, w = image.shape[:2]
+                win_w, win_h = self.window_size
 
-                    if h < win_h or w < win_w:
-                        continue
-
+                if h >= win_h and w >= win_w:
                     pos_samples, neg_samples = extract_training_samples_sliding(
-                        scaled_img,
+                        image,
                         gt_boxes,
                         pos_iou_thresh=self.pos_iou_thresh,
                         neg_iou_thresh=self.neg_iou_thresh,
                         hard_neg_iou_range=self.hard_neg_iou_range,
                         num_neg_per_pos=self.num_neg_per_pos,
                         window_size=self.window_size,
-                        scale=scale,
+                        scale=1.0,
                     )
 
                     for pos_sample in pos_samples:
                         if pos_count >= pos_samples_needed:
                             break
 
-                        features = self.extract_features(scaled_img, pos_sample)
+                        features = self.extract_features(image, pos_sample)
                         X_val_list.append(features)
                         y_val_list.append(1)
                         pos_count += 1
@@ -315,7 +364,7 @@ class ACFDetector:
                         if neg_count >= pos_count * self.num_neg_per_pos:
                             break
 
-                        features = self.extract_features(scaled_img, neg_sample)
+                        features = self.extract_features(image, neg_sample)
                         X_val_list.append(features)
                         y_val_list.append(0)
                         neg_count += 1
@@ -910,61 +959,51 @@ class MemoryEfficientBootstrapWithHeap:
         print(f"Score threshold: {score_threshold:.4f}")
         print(f"{'=' * 60}")
 
-        annotations = parse_wider_face_annotation(annotation_file)
+        annotations = parse_wider_face_annotation(
+            annotation_file,
+            acceptable_blur=None,
+            acceptable_expression=None,
+            acceptable_illumination=None,
+            acceptable_occlusion=None,
+            acceptable_pose=None,
+            filter_invalid=True,
+        )
         image_paths = list(annotations.keys())
 
         mining_images = np.random.choice(
             image_paths, min(num_images, len(image_paths)), replace=False
         )
 
-        mining_scales = [0.5, 0.75, 1.0, 1.25, 1.5]
         total_mined = 0
 
         for img_path in tqdm(mining_images, desc="Mining hard negatives", ncols=100):
             try:
                 image = load_image(img_path, image_base_dir)
                 gt_boxes = annotations[img_path]
-                pyramid = compute_channel_pyramid(image, mining_scales)
 
                 hard_negs_this_image = 0
 
-                for scaled_img, scale in pyramid:
-                    if hard_negs_this_image >= max_hard_negs_per_image:
-                        break
+                h, w = image.shape[:2]
+                win_w, win_h = self.detector.window_size
 
-                    h, w = scaled_img.shape[:2]
-                    win_w, win_h = self.detector.window_size
-
-                    if h < win_h or w < win_w:
-                        continue
+                if h >= win_h and w >= win_w:
+                    channels = compute_channels(image)
 
                     stride = max(4, min(win_w, win_h) // 4)
                     windows = generate_sliding_windows((h, w), (win_w, win_h), stride)
                     np.random.shuffle(windows)
                     windows = np.array(windows)
 
-                    windows_scaled = windows / scale
-                    iou_matrix = compute_iou_batch(windows_scaled, gt_boxes)
+                    iou_matrix = compute_iou_batch(windows, gt_boxes)
                     max_ious = np.max(iou_matrix, axis=1)
 
                     neg_mask = max_ious < self.detector.neg_iou_thresh
                     neg_samples = windows[neg_mask]
 
-                    batch_size = 100
-                    for i in range(0, len(neg_samples), batch_size):
-                        if hard_negs_this_image >= max_hard_negs_per_image:
-                            break
-
-                        batch_windows = neg_samples[i : i + batch_size]
-
-                        # batch_features = self.detector.extract_features_batch(
-                        #     scaled_img, batch_windows
-                        # )
-
-                        batch_features = [
-                            self.detector.extract_features(scaled_img, window)
-                            for window in batch_windows
-                        ]
+                    if len(neg_samples) > 0:
+                        batch_features = self.detector.extract_features_batch(
+                            channels, neg_samples
+                        )
 
                         if len(batch_features) == 0:
                             continue

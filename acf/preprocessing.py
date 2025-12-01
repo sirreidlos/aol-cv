@@ -1,13 +1,52 @@
 import os
 import numpy as np
 import cv2
-from typing import Dict, Tuple, List
+from typing import Dict, Optional, Tuple, List
 
 
 def parse_wider_face_annotation(
     annotation_file: str,
+    acceptable_blur: Optional[List[int]] = None,
+    acceptable_expression: Optional[List[int]] = None,
+    acceptable_illumination: Optional[List[int]] = None,
+    acceptable_occlusion: Optional[List[int]] = None,
+    acceptable_pose: Optional[List[int]] = None,
+    filter_invalid: bool = True,
 ) -> Dict[str, np.ndarray]:
     annotations = {}
+
+    def allowed_attribute(values: List[int]) -> bool:
+        _, _, w, h = values[:4]
+        blur, expression, illumination, invalid, occlusion, pose = values[4:10]
+
+        if w <= 0 or h <= 0:
+            return False
+
+        if filter_invalid and invalid == 1:
+            return False
+
+        if acceptable_blur is not None and blur not in acceptable_blur:
+            return False
+
+        if (
+            acceptable_expression is not None
+            and expression not in acceptable_expression
+        ):
+            return False
+
+        if (
+            acceptable_illumination is not None
+            and illumination not in acceptable_illumination
+        ):
+            return False
+
+        if acceptable_occlusion is not None and occlusion not in acceptable_occlusion:
+            return False
+
+        if acceptable_pose is not None and pose not in acceptable_pose:
+            return False
+
+        return True
 
     with open(annotation_file, "r") as f:
         lines = f.readlines()
@@ -26,8 +65,11 @@ def parse_wider_face_annotation(
             i += 1
 
             # WIDER FACE format: x, y, w, h, blur, expression, illumination, invalid, occlusion, pose
-            x, y, w, h = map(int, box_line[:4])
+            values = list(map(int, box_line[:10]))
+            if not allowed_attribute(values):
+                continue
 
+            x, y, w, h = values[:4]
             if w > 0 and h > 0:
                 boxes.append([x, y, w, h])
 
@@ -122,14 +164,17 @@ def extract_training_samples_sliding(
     num_neg_per_pos: int,
     window_size: Tuple[int, int],
     scale: float,
-) -> Tuple[List[Tuple[int, int, int, int]], List[Tuple[int, int, int, int]]]:
+) -> Tuple[np.ndarray, np.ndarray]:
     assert annotations.ndim == 2, f"Expected 2D annotations, got {annotations.ndim}D"
     assert annotations.shape[1] == 4, f"Expected shape [N, 4], got {annotations.shape}"
     height, width = image.shape[:2]
 
-    # pos_samples = []
-    # neg_samples = []
-    # hard_neg_samples = []
+    pos_samples = []
+    for gt_box in annotations:
+        x, y, w, h = gt_box
+        pos_samples.append([x, y, w, h])
+
+    pos_samples = np.array(pos_samples)
 
     stride = min(window_size) // 4
     windows = generate_sliding_windows((height, width), window_size, stride)
@@ -137,44 +182,20 @@ def extract_training_samples_sliding(
     windows = np.array(windows)
 
     windows_scaled = windows / scale
-    # windows_scaled = np.asarray(windows_scaled, dtype=np.float32).reshape(-1, 4)
-    # annotations = np.asarray(annotations, dtype=np.float32).reshape(-1, 4)
     iou_matrix = compute_iou_batch(windows_scaled, annotations)
     max_ious = np.max(iou_matrix, axis=1)
 
-    pos_mask = max_ious >= pos_iou_thresh
     hard_mask = (max_ious >= hard_neg_iou_range[0]) & (max_ious < hard_neg_iou_range[1])
     neg_mask = max_ious < neg_iou_thresh
 
-    pos_samples = windows[pos_mask]
     hard_neg_samples = windows[hard_mask]
     neg_samples = windows[neg_mask]
-
-    # for win in windows:
-    #     x, y, win_w, win_h = win
-
-    #     orig_x, orig_y = int(x / scale), int(y / scale)
-    #     orig_w, orig_h = int(win_w / scale), int(win_h / scale)
-
-    #     orig_win = (orig_x, orig_y, orig_w, orig_h)
-
-    #     max_iou = 0
-    #     for gt_box in annotations:
-    #         max_iou = max(max_iou, compute_iou(orig_win, gt_box))
-
-    #     if max_iou >= pos_iou_thresh:
-    #         pos_samples.append(win)
-    #     elif hard_neg_iou_range[0] <= max_iou < hard_neg_iou_range[1]:
-    #         hard_neg_samples.append(win)
-    #     elif max_iou < neg_iou_thresh:
-    #         neg_samples.append(win)
 
     num_neg_needed = len(pos_samples) * num_neg_per_pos
     num_hard = min(len(hard_neg_samples), num_neg_needed // 2)
     num_easy = min(len(neg_samples), num_neg_needed - num_hard)
 
     final_neg = np.vstack([hard_neg_samples[:num_hard], neg_samples[:num_easy]])
-    # final_neg = hard_neg_samples[:num_hard] + neg_samples[:num_easy]
 
     return pos_samples, final_neg
 

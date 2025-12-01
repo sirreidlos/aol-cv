@@ -132,6 +132,47 @@ def main():
         default=500,
         help="Number of images to be mined per round (default: 500)",
     )
+    parser.add_argument(
+        "--acceptable_blur",
+        type=int,
+        nargs="+",
+        default=None,
+        help="Acceptable blur levels (0=clear, 1=normal, 2=heavy)",
+    )
+    parser.add_argument(
+        "--acceptable_expression",
+        type=int,
+        nargs="+",
+        default=None,
+        help="Acceptable expression levels (0=typical, 1=exaggerate)",
+    )
+    parser.add_argument(
+        "--acceptable_illumination",
+        type=int,
+        nargs="+",
+        default=None,
+        help="Acceptable illumination levels (0=normal, 1=extreme)",
+    )
+    parser.add_argument(
+        "--acceptable_occlusion",
+        type=int,
+        nargs="+",
+        default=None,
+        help="Acceptable occlusion levels (0=none, 1=partial, 2=heavy)",
+    )
+    parser.add_argument(
+        "--acceptable_pose",
+        type=int,
+        nargs="+",
+        default=None,
+        help="Acceptable pose levels (0=typical, 1=atypical)",
+    )
+    parser.add_argument(
+        "--filter_invalid",
+        action="store_true",
+        default=False,
+        help="Filter out invalid annotations (default: False)",
+    )
 
     args = parser.parse_args()
 
@@ -164,6 +205,12 @@ def main():
     print(f"  - Negative IoU: {args.neg_iou_thresh}")
     print(f"  - Hard Negative IoU Range: {args.hard_neg_iou_range}")
     print(f"  - Number of negatives per positive: {args.num_neg_per_pos}")
+    print(f"  - Acceptable blur: {args.acceptable_blur}")
+    print(f"  - Acceptable expression: {args.acceptable_expression}")
+    print(f"  - Acceptable illumination: {args.acceptable_illumination}")
+    print(f"  - Acceptable occlusion: {args.acceptable_occlusion}")
+    print(f"  - Acceptable pose: {args.acceptable_pose}")
+    print(f"  - Filter invalid: {args.filter_invalid}")
 
     detector = ACFDetector(
         window_size=tuple(args.window_size),
@@ -187,6 +234,12 @@ def main():
         val_annotation_file=args.val_annotation_file,
         val_image_base_dir=args.val_image_dir,
         max_val_images=args.max_val_images,
+        acceptable_blur=args.acceptable_blur,
+        acceptable_expression=args.acceptable_expression,
+        acceptable_illumination=args.acceptable_illumination,
+        acceptable_occlusion=args.acceptable_occlusion,
+        acceptable_pose=args.acceptable_pose,
+        filter_invalid=args.filter_invalid,
     )
     bootstrap = MemoryEfficientBootstrapWithHeap(detector)
     bootstrap.train_with_bootstrap(
