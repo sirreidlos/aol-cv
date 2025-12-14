@@ -2,7 +2,6 @@ from typing import Dict, List, Tuple
 import numpy as np
 import cv2
 from tqdm import tqdm
-import torch
 
 from acf.model import ACFDetector
 from .channels import compute_channels, compute_channel_pyramid
@@ -99,10 +98,10 @@ def detect_multiscale_fast(
     if scales is None:
         scales = [0.5, 0.75, 1.0, 1.25, 1.5]
 
-    print("Computing channels for original image...")
+    # print("Computing channels for original image...")
     channels = compute_channels(image)
 
-    print("Building fast feature pyramid...")
+    # print("Building fast feature pyramid...")
     pyramid = compute_fast_feature_pyramid(channels, scales, detector.window_size)
 
     detector.classifier.eval()
@@ -110,7 +109,9 @@ def detect_multiscale_fast(
     all_boxes = []
     all_scores = []
 
-    for scaled_channels, scale in tqdm(pyramid, desc="Processing scales", unit="scale"):
+    for scaled_channels, scale in tqdm(
+        pyramid, desc="Processing scales", unit="scale", leave=False
+    ):
         h, w = scaled_channels.shape[:2]
         win_w, win_h = detector.window_size
 
@@ -294,24 +295,30 @@ def evaluate_detections(
     ground_truth: List[Tuple[int, int, int, int]],
     iou_threshold=0.5,
 ) -> Dict[str, float]:
+    total_predictions = len(detections)
+
     if len(ground_truth) == 0:
         return {
+            "accuracy": 0,
             "precision": 0,
             "recall": 0,
             "f1": 0,
             "true_positives": 0,
-            "false_positives": len(detections),
+            "false_positives": total_predictions,
             "false_negatives": 0,
+            "total_predictions": total_predictions,
         }
 
     if len(detections) == 0:
         return {
+            "accuracy": 0,
             "precision": 0,
             "recall": 0,
             "f1": 0,
             "true_positives": 0,
             "false_positives": 0,
-            "false_negatives": len(ground_truth),
+            "false_negatives": total_predictions,
+            "total_predictions": total_predictions,
         }
 
     matched_gt = set()
@@ -336,18 +343,24 @@ def evaluate_detections(
             matched_gt.add(best_gt_idx)
             true_positives += 1
 
-    false_positives = len(detections) - true_positives
+    false_positives = total_predictions - true_positives
     false_negatives = len(ground_truth) - true_positives
 
     precision = true_positives / (true_positives + false_positives + 1e-6)
     recall = true_positives / (true_positives + false_negatives + 1e-6)
     f1 = 2 * precision * recall / (precision + recall + 1e-6)
 
+    accuracy = true_positives / (
+        true_positives + false_positives + false_negatives + 1e-6
+    )
+
     return {
+        "accuracy": accuracy,
         "precision": precision,
         "recall": recall,
         "f1": f1,
         "true_positives": true_positives,
         "false_positives": false_positives,
         "false_negatives": false_negatives,
+        "total_predictions": total_predictions,
     }
