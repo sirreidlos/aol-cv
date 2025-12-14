@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 import argparse
 import os
-from acf.model import (
-    ACFDetector,
-    MemoryEfficientBootstrapWithHeap,
-)
+from acf.model import ACFDetector, MemoryEfficientBootstrapWithHeap
+from acf.preprocessing import AnnotationSetting
 
 
 def main():
@@ -173,8 +171,29 @@ def main():
         default=False,
         help="Filter out invalid annotations (default: False)",
     )
+    parser.add_argument(
+        "--checkpoint",
+        type=str,
+        default=None,
+        help="Continue training from checkpoint",
+    )
+    parser.add_argument(
+        "--model",
+        type=str,
+        default="mlp",
+        choices=["mlp", "cnn"],
+        help="Continue training from checkpoint",
+    )
 
     args = parser.parse_args()
+    annotation_setting = AnnotationSetting(
+        acceptable_blur=args.acceptable_blur,
+        acceptable_expression=args.acceptable_expression,
+        acceptable_illumination=args.acceptable_illumination,
+        acceptable_occlusion=args.acceptable_occlusion,
+        acceptable_pose=args.acceptable_pose,
+        filter_invalid=args.filter_invalid,
+    )
 
     ww, wh = args.window_size
     fr = args.feature_resolution
@@ -189,6 +208,7 @@ def main():
 
     print("Initializing ACF detector...")
     print("Configuration:")
+    print(f"  - Model: {args.model}")
     print(f"  - Window size: {args.window_size}")
     print(f"  - Hidden layers: {args.hidden_sizes}")
     print(
@@ -224,22 +244,22 @@ def main():
         neg_iou_thresh=args.neg_iou_thresh,
         hard_neg_iou_range=tuple(args.hard_neg_iou_range),
         num_neg_per_pos=args.num_neg_per_pos,
+        model=args.model,
     )
+
+    if args.checkpoint is not None:
+        print(f"Loading checkpoint {args.checkpoint}")
+        detector.load(args.checkpoint)
 
     print("\nStarting training...")
     X_train, y_train, X_val, y_val = detector.get_train_data(
+        annotation_setting=annotation_setting,
         annotation_file=args.annotation_file,
         image_base_dir=args.image_dir,
         max_images=args.max_images,
         val_annotation_file=args.val_annotation_file,
         val_image_base_dir=args.val_image_dir,
         max_val_images=args.max_val_images,
-        acceptable_blur=args.acceptable_blur,
-        acceptable_expression=args.acceptable_expression,
-        acceptable_illumination=args.acceptable_illumination,
-        acceptable_occlusion=args.acceptable_occlusion,
-        acceptable_pose=args.acceptable_pose,
-        filter_invalid=args.filter_invalid,
     )
     bootstrap = MemoryEfficientBootstrapWithHeap(detector)
     bootstrap.train_with_bootstrap(
@@ -247,6 +267,7 @@ def main():
         y_train,
         X_val,
         y_val,
+        annotation_setting=annotation_setting,
         early_stopping_patience=args.patience,
         mining_annotation_file=args.annotation_file,
         mining_image_base_dir=args.image_dir,

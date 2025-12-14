@@ -1,17 +1,23 @@
+from dataclasses import dataclass
 import os
 import numpy as np
 import cv2
 from typing import Dict, Optional, Tuple, List
 
 
+@dataclass
+class AnnotationSetting:
+    acceptable_blur: Optional[List[int]]
+    acceptable_expression: Optional[List[int]]
+    acceptable_illumination: Optional[List[int]]
+    acceptable_occlusion: Optional[List[int]]
+    acceptable_pose: Optional[List[int]]
+    filter_invalid: bool
+
+
 def parse_wider_face_annotation(
     annotation_file: str,
-    acceptable_blur: Optional[List[int]] = None,
-    acceptable_expression: Optional[List[int]] = None,
-    acceptable_illumination: Optional[List[int]] = None,
-    acceptable_occlusion: Optional[List[int]] = None,
-    acceptable_pose: Optional[List[int]] = None,
-    filter_invalid: bool = True,
+    annotation_setting: AnnotationSetting,
 ) -> Dict[str, np.ndarray]:
     annotations = {}
 
@@ -22,28 +28,37 @@ def parse_wider_face_annotation(
         if w <= 0 or h <= 0:
             return False
 
-        if filter_invalid and invalid == 1:
-            return False
-
-        if acceptable_blur is not None and blur not in acceptable_blur:
+        if annotation_setting.filter_invalid and invalid == 1:
             return False
 
         if (
-            acceptable_expression is not None
-            and expression not in acceptable_expression
+            annotation_setting.acceptable_blur is not None
+            and blur not in annotation_setting.acceptable_blur
         ):
             return False
 
         if (
-            acceptable_illumination is not None
-            and illumination not in acceptable_illumination
+            annotation_setting.acceptable_expression is not None
+            and expression not in annotation_setting.acceptable_expression
         ):
             return False
 
-        if acceptable_occlusion is not None and occlusion not in acceptable_occlusion:
+        if (
+            annotation_setting.acceptable_illumination is not None
+            and illumination not in annotation_setting.acceptable_illumination
+        ):
             return False
 
-        if acceptable_pose is not None and pose not in acceptable_pose:
+        if (
+            annotation_setting.acceptable_occlusion is not None
+            and occlusion not in annotation_setting.acceptable_occlusion
+        ):
+            return False
+
+        if (
+            annotation_setting.acceptable_pose is not None
+            and pose not in annotation_setting.acceptable_pose
+        ):
             return False
 
         return True
@@ -185,8 +200,10 @@ def extract_training_samples_sliding(
     iou_matrix = compute_iou_batch(windows_scaled, annotations)
     max_ious = np.max(iou_matrix, axis=1)
 
-    hard_mask = (max_ious >= hard_neg_iou_range[0]) & (max_ious < hard_neg_iou_range[1])
-    neg_mask = max_ious < neg_iou_thresh
+    hard_mask = (max_ious >= hard_neg_iou_range[0]) & (
+        max_ious <= hard_neg_iou_range[1]
+    )
+    neg_mask = max_ious <= neg_iou_thresh
 
     hard_neg_samples = windows[hard_mask]
     neg_samples = windows[neg_mask]
