@@ -1,4 +1,4 @@
-from typing import Dict, List, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 import numpy as np
 import cv2
 from tqdm import tqdm
@@ -84,6 +84,7 @@ def detect_multiscale_fast(
     score_threshold=0.5,
     nms_threshold=0.3,
     batch_size=32,
+    progress_cb: Optional[Callable[[int, int], None]] = None,
 ) -> List[Tuple[int, int, int, int, float]]:
     def normalize_features(detector, X: np.ndarray) -> np.ndarray:
         X = X.reshape(-1, detector.feature_resolution, detector.feature_resolution, 10)
@@ -98,10 +99,7 @@ def detect_multiscale_fast(
     if scales is None:
         scales = [0.5, 0.75, 1.0, 1.25, 1.5]
 
-    # print("Computing channels for original image...")
     channels = compute_channels(image)
-
-    # print("Building fast feature pyramid...")
     pyramid = compute_fast_feature_pyramid(channels, scales, detector.window_size)
 
     detector.classifier.eval()
@@ -109,64 +107,91 @@ def detect_multiscale_fast(
     all_boxes = []
     all_scores = []
 
-    for scaled_channels, scale in tqdm(
-        pyramid, desc="Processing scales", unit="scale", leave=False
-    ):
+    windows_per_scale = []
+    total_windows = 0
+
+    for scaled_channels, scale in pyramid:
         h, w = scaled_channels.shape[:2]
         win_w, win_h = detector.window_size
 
         if h < win_h or w < win_w:
+            windows_per_scale.append((scaled_channels, scale, []))
             continue
 
         windows = generate_sliding_windows((h, w), detector.window_size, stride)
+        windows_per_scale.append((scaled_channels, scale, windows))
+        total_windows += len(windows)
 
-        for i in tqdm(
-            range(0, len(windows), batch_size),
-            desc=f"Scale {scale:.2f}",
-            unit="batch",
-            leave=False,
-        ):
-            batch_windows = windows[i : i + batch_size]
-            batch_features = []
-
-            for window in batch_windows:
-                features = detector.extract_features_from_channels(
-                    scaled_channels, window
-                )
-                batch_features.append(features)
-
-            if len(batch_features) == 0:
+    with tqdm(
+        total=total_windows,
+        desc="Detecting faces",
+        unit="window",
+        ncols=100,
+    ) as pbar:
+        for scaled_channels, scale, windows in windows_per_scale:
+            if not windows:
                 continue
 
-            features_array = np.array(batch_features, dtype=np.float32)
-            features_normalized = normalize_features(detector, features_array)
-            scores = detector.classifier.infer_batch(features_normalized)
+            for i in range(0, len(windows), batch_size):
+                batch_windows = windows[i : i + batch_size]
+                batch_features = []
 
-            for idx, window in enumerate(batch_windows):
-                score = scores[idx]
-                if score > score_threshold:
-                    x, y, win_w, win_h = window
+                for window in batch_windows:
+                    features = detector.extract_features_from_channels(
+                        scaled_channels, window
+                    )
+                    batch_features.append(features)
 
-                    orig_x = int(x / scale)
-                    orig_y = int(y / scale)
-                    orig_w = int(win_w / scale)
-                    orig_h = int(win_h / scale)
+                if batch_features:
+                    features_array = np.array(batch_features, dtype=np.float32)
+                    features_normalized = normalize_features(detector, features_array)
+                    scores = detector.classifier.infer_batch(features_normalized)
 
-                    all_boxes.append([orig_x, orig_y, orig_w, orig_h])
-                    all_scores.append(float(score))
+                    for idx, window in enumerate(batch_windows):
+                        score = scores[idx]
+                        if score > score_threshold:
+                            x, y, win_w, win_h = window
+                            all_boxes.append(
+                                [
+                                    int(x / scale),
+                                    int(y / scale),
+                                    int(win_w / scale),
+                                    int(win_h / scale),
+                                ]
+                            )
+                            all_scores.append(float(score))
 
-    if len(all_boxes) > 0:
+                if progress_cb is not None:
+                    # callback for progress if needed
+                    progress_cb(pbar.n, pbar.total)
+                pbar.update(len(batch_windows))
+
+    if all_boxes:
         keep_indices = non_max_suppression(all_boxes, all_scores, nms_threshold)
-
-        detections = []
-        for idx in keep_indices:
-            box = all_boxes[idx]
-            score = all_scores[idx]
-            detections.append((*box, score))
-
-        return detections
+        return [(*all_boxes[i], all_scores[i]) for i in keep_indices]
 
     return []
+
+
+def get_scales_octave_based(n_per_oct=8, n_oct_up=0, min_ds=(16, 16), max_scale=None):
+    scales = []
+    scale_factor = 2 ** (-1.0 / n_per_oct)
+
+    current_scale = 2**n_oct_up
+
+    while True:
+        scales.append(current_scale)
+        if max_scale and current_scale < max_scale:
+            break
+        current_scale *= scale_factor
+
+        if (
+            current_scale * min_ds[0] < min_ds[0]
+            or current_scale * min_ds[1] < min_ds[1]
+        ):
+            break
+
+    return scales
 
 
 def detect_multiscale(
@@ -288,6 +313,111 @@ def visualize_detections(
         )
 
     return vis_image
+
+
+def normalize_channel(channel):
+    """Normalize a channel to 0-255 for visualization."""
+    ch_min = channel.min()
+    ch_max = channel.max()
+
+    if ch_max - ch_min < 1e-6:
+        return np.zeros_like(channel, dtype=np.uint8)
+
+    normalized = (channel - ch_min) / (ch_max - ch_min) * 255
+    return normalized.astype(np.uint8)
+
+
+# def visualize_feature_map(feature_map, detection_idx, score):
+#     """
+#     Visualize all 10 feature channels as a grid.
+#     feature_map: [16, 16, 10]
+#     """
+#     channels_names = ["L", "U", "V", "M", "H1", "H2", "H3", "H4", "H5", "H6"]
+
+#     fig_height = 2 * 16 * 2
+#     fig_width = 5 * 16 * 2
+#     figure = np.ones((fig_height + 60, fig_width + 20), dtype=np.uint8) * 255
+
+#     title = f"Detection {detection_idx} (score: {score:.3f})"
+#     cv2.putText(figure, title, (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
+
+#     for idx, (channel, name) in enumerate(
+#         zip(feature_map.transpose(2, 0, 1), channels_names)
+#     ):
+#         row = idx // 5
+#         col = idx % 5
+
+#         y_start = 60 + row * 16 * 2
+#         x_start = 10 + col * 16 * 2
+
+#         normalized = normalize_channel(channel)
+#         upscaled = cv2.resize(normalized, (32, 32), interpolation=cv2.INTER_NEAREST)
+
+#         figure[y_start : y_start + 32, x_start : x_start + 32] = upscaled
+
+#         cv2.putText(
+#             figure,
+#             name,
+#             (x_start, y_start - 5),
+#             cv2.FONT_HERSHEY_SIMPLEX,
+#             0.4,
+#             (0, 0, 0),
+#             1,
+#         )
+
+#     return figure
+
+
+def visualize_feature_map(feature_map, detection_idx, score):
+    channels_names = ["L", "U", "V", "M", "H1", "H2", "H3", "H4", "H5", "H6"]
+
+    scale_factor = 8
+    channel_size = feature_map.shape[0]
+    upscaled_size = channel_size * scale_factor
+
+    n_cols = 5
+    n_rows = 2
+    gap_between_rows = 32
+    top_margin = 60
+    left_margin = 20
+
+    fig_height = top_margin + n_rows * upscaled_size + gap_between_rows
+    fig_width = left_margin + n_cols * upscaled_size + 20
+
+    figure = np.ones((fig_height, fig_width), dtype=np.uint8) * 255
+
+    title = f"Detection {detection_idx} (score: {score:.3f})"
+    cv2.putText(figure, title, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 0), 2)
+
+    for idx, (channel, name) in enumerate(
+        zip(feature_map.transpose(2, 0, 1), channels_names)
+    ):
+        row = idx // n_cols
+        col = idx % n_cols
+
+        y_start = top_margin + row * upscaled_size + row * gap_between_rows
+        x_start = left_margin + col * upscaled_size
+
+        normalized = normalize_channel(channel)
+        upscaled = cv2.resize(
+            normalized, (upscaled_size, upscaled_size), interpolation=cv2.INTER_NEAREST
+        )
+
+        figure[y_start : y_start + upscaled_size, x_start : x_start + upscaled_size] = (
+            upscaled
+        )
+
+        cv2.putText(
+            figure,
+            name,
+            (x_start, y_start - 5),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.8,
+            (0, 0, 0),
+            2,
+        )
+
+    return figure
 
 
 def evaluate_detections(

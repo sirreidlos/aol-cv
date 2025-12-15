@@ -2,7 +2,11 @@
 import argparse
 from tqdm import tqdm
 from acf.model import ACFDetector
-from acf.inference import detect_multiscale, evaluate_detections
+from acf.inference import (
+    detect_multiscale,
+    evaluate_detections,
+    get_scales_octave_based,
+)
 from acf.preprocessing import AnnotationSetting, parse_wider_face_annotation, load_image
 
 
@@ -26,13 +30,6 @@ def main():
         default=None,
         help="Maximum number of images to evaluate (None for all)",
     )
-    parser.add_argument(
-        "--scales",
-        type=float,
-        nargs="+",
-        default=[0.5, 0.75, 1.0, 1.25, 1.5],
-        help="Scales for multi-scale detection",
-    )
     parser.add_argument("--stride", type=int, default=8, help="Sliding window stride")
     parser.add_argument(
         "--score_threshold",
@@ -46,8 +43,37 @@ def main():
     parser.add_argument(
         "--iou_threshold", type=float, default=0.5, help="IoU threshold for evaluation"
     )
+    parser.add_argument(
+        "--n_per_oct",
+        type=int,
+        default=8,
+        help="Number of scales per octave for octave-based scaling",
+    )
+    parser.add_argument(
+        "--n_oct_up",
+        type=int,
+        default=2,
+        help="Number of octaves up for octave-based scaling",
+    )
+    parser.add_argument(
+        "--min_ds",
+        type=int,
+        nargs=2,
+        default=[24, 24],
+        help="Minimum detection size [width height] for octave-based scaling",
+    )
+    parser.add_argument(
+        "--max_scale",
+        type=float,
+        default=None,
+        help="Maximum scale for octave-based scaling",
+    )
 
     args = parser.parse_args()
+
+    scales = get_scales_octave_based(
+        args.n_per_oct, args.n_oct_up, tuple(args.min_ds), args.max_scale
+    )
 
     print(f"Loading model from {args.model}...")
     detector = ACFDetector()
@@ -73,7 +99,7 @@ def main():
             detections = detect_multiscale(
                 detector=detector,
                 image=image,
-                scales=args.scales,
+                scales=scales,
                 stride=args.stride,
                 score_threshold=args.score_threshold,
                 nms_threshold=args.nms_threshold,

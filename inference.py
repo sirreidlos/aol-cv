@@ -5,7 +5,12 @@ import numpy as np
 import shutil
 from pathlib import Path
 from acf.model import ACFDetector
-from acf.inference import detect_multiscale, visualize_detections
+from acf.inference import (
+    detect_multiscale,
+    get_scales_octave_based,
+    visualize_detections,
+    visualize_feature_map,
+)
 from acf.preprocessing import load_image
 
 
@@ -16,93 +21,6 @@ def prepare_output_dir(output_dir):
         shutil.rmtree(path)
     path.mkdir(parents=True, exist_ok=True)
     return path
-
-
-def normalize_channel(channel):
-    """Normalize a channel to 0-255 for visualization."""
-    ch_min = channel.min()
-    ch_max = channel.max()
-
-    if ch_max - ch_min < 1e-6:
-        return np.zeros_like(channel, dtype=np.uint8)
-
-    normalized = (channel - ch_min) / (ch_max - ch_min) * 255
-    return normalized.astype(np.uint8)
-
-
-def visualize_feature_map(feature_map, detection_idx, output_dir, score):
-    """
-    Visualize all 10 feature channels as a grid.
-    feature_map: [16, 16, 10]
-    """
-    channels_names = [
-        "L",
-        "U",
-        "V",
-        "M",
-        "HOG1",
-        "HOG2",
-        "HOG3",
-        "HOG4",
-        "HOG5",
-        "HOG6",
-    ]
-
-    fig_height = 2 * 16 * 2
-    fig_width = 5 * 16 * 2
-    figure = np.ones((fig_height + 60, fig_width + 20), dtype=np.uint8) * 255
-
-    title = f"Detection {detection_idx} (score: {score:.3f})"
-    cv2.putText(figure, title, (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
-
-    for idx, (channel, name) in enumerate(
-        zip(feature_map.transpose(2, 0, 1), channels_names)
-    ):
-        row = idx // 5
-        col = idx % 5
-
-        y_start = 60 + row * 16 * 2
-        x_start = 10 + col * 16 * 2
-
-        normalized = normalize_channel(channel)
-        upscaled = cv2.resize(normalized, (32, 32), interpolation=cv2.INTER_NEAREST)
-
-        figure[y_start : y_start + 32, x_start : x_start + 32] = upscaled
-
-        cv2.putText(
-            figure,
-            name,
-            (x_start, y_start - 5),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.4,
-            (0, 0, 0),
-            1,
-        )
-
-    output_path = output_dir / f"detection_{detection_idx:03d}_score_{score:.3f}.jpg"
-    cv2.imwrite(str(output_path), figure)
-    return output_path
-
-
-def get_scales_octave_based(n_per_oct=8, n_oct_up=0, min_ds=(16, 16), max_scale=None):
-    scales = []
-    scale_factor = 2 ** (-1.0 / n_per_oct)
-
-    current_scale = 2**n_oct_up
-
-    while True:
-        scales.append(current_scale)
-        if max_scale and current_scale < max_scale:
-            break
-        current_scale *= scale_factor
-
-        if (
-            current_scale * min_ds[0] < min_ds[0]
-            or current_scale * min_ds[1] < min_ds[1]
-        ):
-            break
-
-    return scales
 
 
 def main():
@@ -150,7 +68,7 @@ def main():
     parser.add_argument(
         "--n_per_oct",
         type=int,
-        default=32,
+        default=8,
         help="Number of scales per octave for octave-based scaling",
     )
     parser.add_argument(
@@ -217,7 +135,11 @@ def main():
         print(f"  Face {i + 1}: x={x}, y={y}, w={w}, h={h}, score={score:.3f}")
 
         if vis_dir:
-            vis_path = visualize_feature_map(feature_map, i + 1, vis_dir, score)
+            vis_path = (
+                args.feature_vis_dir / f"detection_{i + 1:03d}_score_{score:.3f}.jpg"
+            )
+            figure = visualize_feature_map(feature_map, i + 1, score)
+            cv2.imwrite(str(vis_path), figure)
             print(f"    → Visualization saved to {vis_path}")
 
     if args.output or len(detections) > 0:

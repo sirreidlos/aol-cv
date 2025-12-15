@@ -43,7 +43,7 @@ wheels = [
 [[package]]
 name = "aol-cv"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "h5py" },
     { name = "imutils" },
@@ -59,6 +59,7 @@ dependencies = [
     { name = "scikit-learn" },
     { name = "scipy" },
     { name = "streamlit" },
+    { name = "streamlit-image-comparison" },
     { name = "torch" },
     { name = "torchvision" },
     { name = "tqdm" },
@@ -80,6 +81,7 @@ requires-dist = [
     { name = "scikit-learn", specifier = ">=1.7.2" },
     { name = "scipy", specifier = ">=1.16.2" },
     { name = "streamlit", specifier = ">=1.52.1" },
+    { name = "streamlit-image-comparison", specifier = ">=0.0.4" },
     { name = "torch", specifier = ">=2.8.0" },
     { name = "torchvision", specifier = ">=0.23.0" },
     { name = "tqdm", specifier = ">=4.67.1" },
@@ -2577,6 +2579,20 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/6f/ec/66ca1578587bbaaea5757a7f074d3f762fff8d782ffb4497a83c5722aa44/streamlit-1.52.1.tar.gz", hash = "sha256:b036a71866b893c97fdebaa2a2ebd21ebf2af7daea4b3abe783a57b26f55b3ca", size = 8582829, upload-time = "2025-12-05T18:55:42.006Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d0/d4/cdafd4cc940937410f465ca7a77dd34237182c2ddece624e08db959496f8/streamlit-1.52.1-py3-none-any.whl", hash = "sha256:97fee2c3421d350fd65548e45a20f506ec1b651d78f95ecacbc0c2f9f838081c", size = 9024748, upload-time = "2025-12-05T18:55:39.713Z" },
+]
+
+[[package]]
+name = "streamlit-image-comparison"
+version = "0.0.4"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+    { name = "pillow" },
+    { name = "streamlit" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/68/bf/c163952ff3ccca0672474ac96e95c2e5abee7af63b9e49c194145e68ed05/streamlit-image-comparison-0.0.4.tar.gz", hash = "sha256:3932875978151eb89b65a2da5ca293fc15da12a322632214d96ce0146d9154b4", size = 6027, upload-time = "2023-03-14T14:25:43.46Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/4b/eb/8c1f2f32f9fb201197ae8882e084b455356222ed5d9ba0f19c789e7a549e/streamlit_image_comparison-0.0.4-py3-none-any.whl", hash = "sha256:84bb4bc8c9e66fd7ab28fdcd76cf87f0f27941e7288160fb9832c9322bd1f085", size = 6301, upload-time = "2023-03-14T14:25:42.091Z" },
 ]
 
 [[package]]
