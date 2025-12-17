@@ -327,48 +327,7 @@ def normalize_channel(channel):
     return normalized.astype(np.uint8)
 
 
-# def visualize_feature_map(feature_map, detection_idx, score):
-#     """
-#     Visualize all 10 feature channels as a grid.
-#     feature_map: [16, 16, 10]
-#     """
-#     channels_names = ["L", "U", "V", "M", "H1", "H2", "H3", "H4", "H5", "H6"]
-
-#     fig_height = 2 * 16 * 2
-#     fig_width = 5 * 16 * 2
-#     figure = np.ones((fig_height + 60, fig_width + 20), dtype=np.uint8) * 255
-
-#     title = f"Detection {detection_idx} (score: {score:.3f})"
-#     cv2.putText(figure, title, (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
-
-#     for idx, (channel, name) in enumerate(
-#         zip(feature_map.transpose(2, 0, 1), channels_names)
-#     ):
-#         row = idx // 5
-#         col = idx % 5
-
-#         y_start = 60 + row * 16 * 2
-#         x_start = 10 + col * 16 * 2
-
-#         normalized = normalize_channel(channel)
-#         upscaled = cv2.resize(normalized, (32, 32), interpolation=cv2.INTER_NEAREST)
-
-#         figure[y_start : y_start + 32, x_start : x_start + 32] = upscaled
-
-#         cv2.putText(
-#             figure,
-#             name,
-#             (x_start, y_start - 5),
-#             cv2.FONT_HERSHEY_SIMPLEX,
-#             0.4,
-#             (0, 0, 0),
-#             1,
-#         )
-
-#     return figure
-
-
-def visualize_feature_map(feature_map, detection_idx, score):
+def visualize_feature_map(feature_map, detection_idx, score, original_image):
     channels_names = ["L", "U", "V", "M", "H1", "H2", "H3", "H4", "H5", "H6"]
 
     scale_factor = 8
@@ -378,16 +337,47 @@ def visualize_feature_map(feature_map, detection_idx, score):
     n_cols = 5
     n_rows = 2
     gap_between_rows = 32
-    top_margin = 60
+    top_margin = 220
     left_margin = 20
 
     fig_height = top_margin + n_rows * upscaled_size + gap_between_rows
     fig_width = left_margin + n_cols * upscaled_size + 20
 
-    figure = np.ones((fig_height, fig_width), dtype=np.uint8) * 255
+    figure = np.ones((fig_height, fig_width, 3), dtype=np.uint8) * 255
 
     title = f"Detection {detection_idx} (score: {score:.3f})"
     cv2.putText(figure, title, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 0), 2)
+
+    if original_image is not None:
+        print(original_image.ndim)
+        if original_image.ndim == 2:
+            colored_image = cv2.cvtColor(original_image, cv2.COLOR_GRAY2RGB)
+        else:
+            colored_image = original_image
+
+        max_w = 160
+        print(colored_image.shape)
+        h, w, _ = colored_image.shape
+        scale = max_w / w
+        resized = cv2.resize(
+            colored_image,
+            (int(w * scale), int(h * scale)),
+            interpolation=cv2.INTER_AREA,
+        )
+
+        y0 = 32
+        x0 = fig_width - resized.shape[1] - 24
+        figure[y0 : y0 + resized.shape[0], x0 : x0 + resized.shape[1], :] = resized
+
+        cv2.putText(
+            figure,
+            "Original",
+            (x0, y0 - 5),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.6,
+            (0, 0, 0),
+            2,
+        )
 
     for idx, (channel, name) in enumerate(
         zip(feature_map.transpose(2, 0, 1), channels_names)
@@ -402,10 +392,11 @@ def visualize_feature_map(feature_map, detection_idx, score):
         upscaled = cv2.resize(
             normalized, (upscaled_size, upscaled_size), interpolation=cv2.INTER_NEAREST
         )
+        upscaled_bgr = cv2.cvtColor(upscaled, cv2.COLOR_GRAY2RGB)
 
-        figure[y_start : y_start + upscaled_size, x_start : x_start + upscaled_size] = (
-            upscaled
-        )
+        figure[
+            y_start : y_start + upscaled_size, x_start : x_start + upscaled_size, :
+        ] = upscaled_bgr
 
         cv2.putText(
             figure,

@@ -115,7 +115,10 @@ def run_the_app(detector: ACFDetector):
         feature_map = features.reshape(
             (detector.feature_resolution, detector.feature_resolution, 10)
         )
-        vis_feat = visualize_feature_map(feature_map, 1, score)
+
+        print(image.ndim)
+        detected_window = image[y : y + h, x : x + w]
+        vis_feat = visualize_feature_map(feature_map, 1, score, detected_window)
 
     st.image(vis_image, caption="Detected faces", width="stretch")
 
