@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import argparse
 import cv2
-import numpy as np
 import shutil
 from pathlib import Path
 from acf.model import ACFDetector

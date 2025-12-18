@@ -94,7 +94,10 @@ def parse_wider_face_annotation(
     return annotations
 
 
-def compute_iou_batch(windows: np.ndarray, boxes: np.ndarray) -> np.ndarray:
+def compute_iou_batch(
+    windows: List[Tuple[int, int, int, int]] | np.ndarray,
+    boxes: List[Tuple[int, int, int, int]] | np.ndarray,
+) -> np.ndarray:
     """
     windows: [N;4]
     boxes: [M;4]

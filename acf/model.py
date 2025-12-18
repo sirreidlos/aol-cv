@@ -1,3 +1,4 @@
+from pathlib import Path
 import pickle
 
 from sklearn.metrics import classification_report
@@ -34,6 +35,8 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class ACFDetector:
     classifier: Model
+    window_size: Tuple[int, int]
+    feature_resolution: int
 
     def __init__(
         self,
@@ -396,7 +399,7 @@ class ACFDetector:
 
         print(f"Model saved to {filepath}")
 
-    def load(self, filepath: str):
+    def load(self, filepath: str | Path):
         with open(filepath, "rb") as f:
             model_data = pickle.load(f)
 
@@ -434,129 +437,161 @@ class ACFDetector:
         X = (X - self.mean) / self.std
         return X.reshape(-1, self.feature_resolution * self.feature_resolution * 10)
 
-    def evaluate_detection(self, annotation_file, image_base_dir, iou_threshold=0.5, confidence_threshold=0.5, max_images=None):
+    def evaluate_detection(
+        self,
+        annotation_file,
+        image_base_dir,
+        iou_threshold=0.5,
+        confidence_threshold=0.5,
+        max_images=None,
+    ):
         """
         Proper object detection evaluation using sliding window detection
         on full images with IoU-based matching.
         """
         from acf.preprocessing import parse_wider_face_annotation
         from acf.channels import compute_channels
-        from .preprocessing import generate_sliding_windows, compute_iou_batch, load_image
-        
+        from .preprocessing import (
+            generate_sliding_windows,
+            compute_iou_batch,
+            load_image,
+        )
+
         print("=== PROPER OBJECT DETECTION EVALUATION ===")
-        
+
         # Load annotations
         annotation_setting = AnnotationSetting(
-            acceptable_blur=None, acceptable_expression=None, 
-            acceptable_illumination=None, acceptable_occlusion=None, 
-            acceptable_pose=None, filter_invalid=True
+            acceptable_blur=None,
+            acceptable_expression=None,
+            acceptable_illumination=None,
+            acceptable_occlusion=None,
+            acceptable_pose=None,
+            filter_invalid=True,
         )
         annotations = parse_wider_face_annotation(annotation_file, annotation_setting)
         image_paths = list(annotations.keys())
-        
+
         if max_images:
             image_paths = image_paths[:max_images]
-            
+
         print(f"Evaluating on {len(image_paths)} images...")
-        
+
         total_gt_boxes = 0
         total_detections = 0
         true_positives = 0
         false_positives = 0
         false_negatives = 0
-        
+
         for img_path in tqdm(image_paths, desc="Detecting faces", ncols=100):
             try:
                 # Load image
                 image = load_image(img_path, image_base_dir)
                 gt_boxes = annotations[img_path]
                 h, w = image.shape[:2]
-                
+
                 # Skip if image too small
                 if h < self.window_size[1] or w < self.window_size[0]:
                     continue
-                
+
                 # Generate sliding windows
                 stride = max(4, min(self.window_size) // 4)
                 windows = generate_sliding_windows((h, w), self.window_size, stride)
                 windows = np.array(windows)  # Convert to numpy array
-                
+
                 # Debug: Check shapes and types
                 print(f"Debug: windows shape: {windows.shape}, dtype: {windows.dtype}")
-                
+
                 # Extract features for all windows
                 channels = compute_channels(image)
                 features = self.extract_features_batch(channels, windows)
                 features_norm = self.normalize_in_place(features.copy())
-                
+
                 # Get predictions
                 scores = self.classifier.infer_batch(features_norm)
-                
+
                 # Filter detections by confidence threshold
                 confident_mask = scores >= confidence_threshold
                 confident_detections = windows[confident_mask]
                 confident_scores = scores[confident_mask]
-                
+
                 # Non-maximum suppression (simple version)
                 if len(confident_detections) > 0:
                     # Sort by confidence
                     sorted_indices = np.argsort(confident_scores)[::-1]
                     confident_detections = confident_detections[sorted_indices]
-                    
+
                     # Simple NMS
                     final_detections = []
                     for det in confident_detections:
                         keep = True
                         for kept_det in final_detections:
-                            iou = compute_iou_batch(np.array([det]), np.array([kept_det]))[0, 0]
+                            iou = compute_iou_batch(
+                                np.array([det]), np.array([kept_det])
+                            )[0, 0]
                             if iou > 0.3:  # NMS threshold
                                 keep = False
                                 break
                         if keep:
                             final_detections.append(det)
-                    
-                    confident_detections = np.array(final_detections) if final_detections else np.array([]).reshape(0, 4)
+
+                    confident_detections = (
+                        np.array(final_detections)
+                        if final_detections
+                        else np.array([]).reshape(0, 4)
+                    )
                 else:
                     confident_detections = np.array([]).reshape(0, 4)
-                
+
                 # Match detections to ground truth
                 if len(gt_boxes) > 0 and len(confident_detections) > 0:
                     iou_matrix = compute_iou_batch(confident_detections, gt_boxes)
-                    
+
                     # Greedy matching
                     matched_gt = set()
                     tp_count = 0
-                    
+
                     for det_idx in range(len(confident_detections)):
                         best_gt_idx = np.argmax(iou_matrix[det_idx])
                         best_iou = iou_matrix[det_idx, best_gt_idx]
-                        
+
                         if best_iou >= iou_threshold and best_gt_idx not in matched_gt:
                             tp_count += 1
                             matched_gt.add(best_gt_idx)
-                    
+
                     true_positives += tp_count
                     false_positives += len(confident_detections) - tp_count
                     false_negatives += len(gt_boxes) - len(matched_gt)
-                    
+
                 elif len(gt_boxes) == 0:
                     false_positives += len(confident_detections)
                 else:  # len(confident_detections) == 0
                     false_negatives += len(gt_boxes)
-                
+
                 total_gt_boxes += len(gt_boxes)
                 total_detections += len(confident_detections)
-                
+
             except Exception as e:
                 print(f"Error processing {img_path}: {e}")
                 continue
-        
+
         # Calculate metrics
-        precision = true_positives / (true_positives + false_positives) if (true_positives + false_positives) > 0 else 0
-        recall = true_positives / (true_positives + false_negatives) if (true_positives + false_negatives) > 0 else 0
-        f1 = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0
-        
-        print(f"\nDetection Results:")
+        precision = (
+            true_positives / (true_positives + false_positives)
+            if (true_positives + false_positives) > 0
+            else 0
+        )
+        recall = (
+            true_positives / (true_positives + false_negatives)
+            if (true_positives + false_negatives) > 0
+            else 0
+        )
+        f1 = (
+            2 * (precision * recall) / (precision + recall)
+            if (precision + recall) > 0
+            else 0
+        )
+
+        print("\nDetection Results:")
         print(f"  Ground truth faces: {total_gt_boxes}")
         print(f"  Total detections: {total_detections}")
         print(f"  True positives: {true_positives}")
@@ -566,16 +601,16 @@ class ACFDetector:
         print(f"  Precision: {precision:.4f}")
         print(f"  Recall: {recall:.4f}")
         print(f"  F1-score: {f1:.4f}")
-        
+
         return {
-            'precision': precision,
-            'recall': recall, 
-            'f1': f1,
-            'tp': true_positives,
-            'fp': false_positives,
-            'fn': false_negatives,
-            'total_gt': total_gt_boxes,
-            'total_detections': total_detections
+            "precision": precision,
+            "recall": recall,
+            "f1": f1,
+            "tp": true_positives,
+            "fp": false_positives,
+            "fn": false_negatives,
+            "total_gt": total_gt_boxes,
+            "total_detections": total_detections,
         }
 
 
@@ -741,9 +776,9 @@ class MemoryEfficientBootstrapWithHeap:
     - Only O(log K) overhead per insertion
     """
 
-    detector: Model
+    detector: ACFDetector
 
-    def __init__(self, detector):
+    def __init__(self, detector: ACFDetector):
         self.detector = detector
 
     def get_neg_current(
@@ -857,8 +892,8 @@ class MemoryEfficientBootstrapWithHeap:
         annotation_setting: AnnotationSetting,
         bootstrap_rounds=3,
         early_stopping_patience=5,
-        mining_annotation_file: str = None,
-        mining_image_base_dir: str = None,
+        mining_annotation_file: str | None = None,
+        mining_image_base_dir: str | None = None,
         num_mining_images: int = 100,
         max_hard_neg_buffer_size: int = 100000,
     ):

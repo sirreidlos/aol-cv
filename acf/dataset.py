@@ -4,10 +4,10 @@ import numpy as np
 import cv2
 import torch
 from torch.utils.data import Dataset
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from acf.channels import compute_channels
-from acf.preprocessing import compute_iou_batch, generate_sliding_windows
+from acf.preprocessing import compute_iou_batch
 
 
 @dataclass

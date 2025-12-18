@@ -3,6 +3,7 @@ import argparse
 import os
 from acf.model import ACFDetector, MemoryEfficientBootstrapWithHeap
 from acf.preprocessing import AnnotationSetting
+import numpy as np
 
 
 def main():
@@ -261,6 +262,10 @@ def main():
         val_image_base_dir=args.val_image_dir,
         max_val_images=args.max_val_images,
     )
+
+    assert isinstance(X_val, np.ndarray)
+    assert isinstance(y_val, np.ndarray)
+
     bootstrap = MemoryEfficientBootstrapWithHeap(detector)
     bootstrap.train_with_bootstrap(
         X_train,

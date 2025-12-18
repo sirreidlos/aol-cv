@@ -1,13 +1,9 @@
-import pickle
 import numpy as np
 from tqdm import tqdm
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import TensorDataset, DataLoader
-import os
-from typing import Tuple
-import cv2
 from sklearn.metrics import average_precision_score
 
 from acf.abstract_model import Model
