@@ -166,6 +166,9 @@ def detect_multiscale_fast(
                     progress_cb(pbar.n, pbar.total)
                 pbar.update(len(batch_windows))
 
+    if nms_threshold == 1.0:
+        return [(*all_boxes[i], all_scores[i]) for i in range(len(all_boxes))]
+
     if all_boxes:
         keep_indices = non_max_suppression(all_boxes, all_scores, nms_threshold)
         return [(*all_boxes[i], all_scores[i]) for i in keep_indices]
@@ -349,14 +352,12 @@ def visualize_feature_map(feature_map, detection_idx, score, original_image):
     cv2.putText(figure, title, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 0), 2)
 
     if original_image is not None:
-        print(original_image.ndim)
         if original_image.ndim == 2:
             colored_image = cv2.cvtColor(original_image, cv2.COLOR_GRAY2RGB)
         else:
             colored_image = original_image
 
         max_w = 160
-        print(colored_image.shape)
         h, w, _ = colored_image.shape
         scale = max_w / w
         resized = cv2.resize(
