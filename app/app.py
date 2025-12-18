@@ -1,5 +1,5 @@
+from typing import List, Tuple
 import streamlit as st
-from streamlit_image_comparison import image_comparison
 import numpy as np
 import cv2
 
@@ -11,20 +11,52 @@ from acf.inference import (
     visualize_feature_map,
 )
 from acf.model import ACFDetector
+from pathlib import Path
+
+
+BASE_DIR = Path(__file__).resolve().parent
+MODELS_DIR = BASE_DIR / "models"
+
+
+acf_model_map = {
+    "ACF (allset)": MODELS_DIR / "allset.pkl",
+    "ACF (cleanset)": MODELS_DIR / "cleanset.pkl",
+    "ACF (cleanset_smaller)": MODELS_DIR / "cleanset_smaller.pkl",
+}
+
+
+@st.cache_resource
+def load_acf_detector(model_path: Path) -> ACFDetector:
+    detector = ACFDetector()
+    detector.load(model_path)
+    return detector
 
 
 def main():
-    @st.cache_resource
-    def load_detector() -> ACFDetector:
-        detector = ACFDetector()
-        detector.load("./models/cleanset.pkl")
-        return detector
-
-    detector = load_detector()
-    run_the_app(detector)
+    run_the_app()
 
 
-def run_the_app(detector: ACFDetector):
+def run_the_app():
+    st.sidebar.header("Model")
+
+    model_choice = st.sidebar.selectbox(
+        "Select detector",
+        [
+            "ACF (allset)",
+            "ACF (cleanset)",
+            "ACF (cleanset_smaller)",
+            "Viola-Jones",
+        ],
+    )
+
+    detector = None
+    use_vj = False
+
+    if model_choice.startswith("ACF"):
+        detector = load_acf_detector(acf_model_map[model_choice])
+    else:
+        use_vj = True
+
     st.sidebar.header("Input")
 
     uploaded_file = st.sidebar.file_uploader(
@@ -69,29 +101,44 @@ def run_the_app(detector: ACFDetector):
 
     st.image(image, caption="Uploaded image", width="stretch")
 
-    if "all_detections" not in st.session_state or st.session_state.get(
-        "image_hash"
-    ) != hash(uploaded_file.getvalue()):
-        st.session_state.image_hash = hash(uploaded_file.getvalue())
-        st.session_state.all_detections = run_inference(
-            detector=detector,
-            image=image,
-            stride=stride,
-            batch_size=batch_size,
-            num_scales=num_scales,
-            num_octaves=num_octaves,
-            min_ds=(min_window_width, min_window_height),
-        )
+    cache_key = (
+        model_choice,
+        hash(uploaded_file.getvalue()),
+        stride,
+        batch_size,
+        num_scales,
+        num_octaves,
+        min_window_width,
+        min_window_height,
+    )
+
+    if (
+        "all_detections" not in st.session_state
+        or st.session_state.get("cache_key") != cache_key
+    ):
+        st.session_state.cache_key = cache_key
+
+        if use_vj:
+            faces = run_inference_vj_from_image(image)
+            # convert to (x, y, w, h, score)
+            st.session_state.all_detections = [
+                (x, y, w, h, 1.0) for (x, y, w, h) in faces
+            ]
+        else:
+            st.session_state.all_detections = run_inference_mlp(
+                detector=detector,
+                image=image,
+                stride=stride,
+                batch_size=batch_size,
+                num_scales=num_scales,
+                num_octaves=num_octaves,
+                min_ds=(min_window_width, min_window_height),
+            )
 
     assert st.session_state.all_detections is not None
-    # filtered_detections = [
-    #     det for det in st.session_state.all_detections if det[4] >= score_threshold
-    # ]
-
     all_boxes = np.array([det[:4] for det in st.session_state.all_detections])
     all_scores = np.array([det[4] for det in st.session_state.all_detections])
 
-    # Filter by score first
     score_filtered_indices = [
         i for i, s in enumerate(all_scores) if s >= score_threshold
     ]
@@ -107,7 +154,8 @@ def run_the_app(detector: ACFDetector):
     vis_image = visualize_detections(image.copy(), filtered_detections)
     vis_feat = None
 
-    if filtered_detections:
+    if filtered_detections and not use_vj:
+        assert detector
         first_det = filtered_detections[0]
         x, y, w, h, score = first_det
         cv2.rectangle(vis_image, (x, y), (x + w, y + h), (0, 0, 255), 2)
@@ -116,7 +164,6 @@ def run_the_app(detector: ACFDetector):
             (detector.feature_resolution, detector.feature_resolution, 10)
         )
 
-        print(image.ndim)
         detected_window = image[y : y + h, x : x + w]
         vis_feat = visualize_feature_map(feature_map, 1, score, detected_window)
 
@@ -126,7 +173,22 @@ def run_the_app(detector: ACFDetector):
         st.image(vis_feat, caption="Example feature map", width="stretch")
 
 
-def run_inference(
+def run_inference_vj_from_image(image_rgb):
+    gray = cv2.cvtColor(image_rgb, cv2.COLOR_RGB2GRAY)
+
+    cascade_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
+    face_cascade = cv2.CascadeClassifier(cascade_path)
+
+    faces = face_cascade.detectMultiScale(
+        gray,
+        scaleFactor=1.1,
+        minNeighbors=5,
+    )
+
+    return faces
+
+
+def run_inference_mlp(
     detector,
     image,
     stride,
@@ -134,7 +196,7 @@ def run_inference(
     num_scales,
     num_octaves,
     min_ds,
-):
+) -> List[Tuple[int, int, int, int, float]]:
     progress = st.progress(0.0)
     status = st.empty()
 
