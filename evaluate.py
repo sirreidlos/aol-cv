@@ -119,6 +119,7 @@ def main():
         total_fp = sum([m["false_positives"] for m in all_metrics])
         total_fn = sum([m["false_negatives"] for m in all_metrics])
 
+        accuracy = total_tp / (total_tp + total_fp + total_fn + 1e-6)
         precision = total_tp / (total_tp + total_fp + 1e-6)
         recall = total_tp / (total_tp + total_fn + 1e-6)
         f1 = 2 * precision * recall / (precision + recall + 1e-6)
@@ -126,6 +127,7 @@ def main():
         print("\n" + "=" * 50)
         print("Evaluation Results")
         print("=" * 50)
+        print(f"Accuracy: {accuracy:.4f}")
         print(f"Precision: {precision:.4f}")
         print(f"Recall:    {recall:.4f}")
         print(f"F1-Score:  {f1:.4f}")
