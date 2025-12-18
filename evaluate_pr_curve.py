@@ -124,6 +124,7 @@ def main():
 
     parser.add_argument("--output", type=str, default="pr_curve.png")
     parser.add_argument("--max_images", type=int, default=None)
+    parser.add_argument("--batch_size", type=int, default=32)
 
     args = parser.parse_args()
 
@@ -160,6 +161,7 @@ def main():
             scales=scales,
             stride=args.stride,
             score_threshold=0.0,
+            batch_size=args.batch_size,
             nms_threshold=args.nms_threshold,
         )
 

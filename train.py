@@ -182,8 +182,8 @@ def main():
         "--model",
         type=str,
         default="mlp",
-        choices=["mlp", "cnn"],
-        help="Continue training from checkpoint",
+        choices=["mlp", "cnn", "ada", "gbm"],
+        help="Model type to use for training",
     )
 
     args = parser.parse_args()
@@ -204,6 +204,9 @@ def main():
     if args.output_model is None:
         hidden_str = "_".join(map(str, args.hidden_sizes))
         args.output_model = f"models/acf_w{ww}x{wh}_h{hidden_str}_r{fr}_lr{lr}_e{e}.pkl"
+
+    if args.model == "gbm" or args.model == "ada":
+        args.epochs = 1
 
     os.makedirs(os.path.dirname(args.output_model), exist_ok=True)
 

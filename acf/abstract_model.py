@@ -48,3 +48,6 @@ class Model(ABC):
     @abstractmethod
     def load_state(self, state: Dict[str, Any]) -> Self:
         pass
+
+    def eval(self):
+        pass

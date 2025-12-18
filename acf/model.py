@@ -2,12 +2,14 @@ from pathlib import Path
 import pickle
 
 from sklearn.metrics import classification_report
+from acf.ada import AdaBoost
 from acf.cnn import CNNClassifier
 import numpy as np
 from tqdm import tqdm
 import os
 from typing import Literal, Tuple, List
 
+from acf.gbm import LightGBM
 from acf.mlp import MLPClassifier
 from acf.abstract_model import Model
 from .channels import compute_channels
@@ -51,7 +53,7 @@ class ACFDetector:
         neg_iou_thresh=0.3,
         hard_neg_iou_range=(0.1, 0.3),
         num_neg_per_pos=3,
-        model: Literal["mlp", "cnn"] = "mlp",
+        model: Literal["mlp", "cnn", "gbm", "ada"] = "mlp",
     ):
         self.window_size = window_size
         self.hidden_sizes = hidden_sizes
@@ -71,13 +73,28 @@ class ACFDetector:
             self.classifier = MLPClassifier(
                 input_size=input_size, hidden_sizes=hidden_sizes, num_classes=2
             )
-        if model == "cnn":
+        elif model == "cnn":
             self.classifier = CNNClassifier(
                 input_size,
                 hidden_sizes,
                 num_classes=2,
                 feature_resolution=feature_resolution,
             )
+        elif model == "gbm":
+            self.classifier = LightGBM(
+                n_estimators=100,
+                learning_rate=1.0,
+                max_depth=1,
+                random_state=42,
+                n_jobs=-1,
+                verbose=1,
+            )
+        elif model == "ada":
+            self.classifier = AdaBoost(
+                n_estimators=100, learning_rate=1.0, max_depth=1, random_state=42
+            )
+
+        self.model_type = model
 
         self.trained = False
 
@@ -392,6 +409,7 @@ class ACFDetector:
             "trained": self.trained,
             "std": self.std,
             "mean": self.mean,
+            "model_type": self.model_type,
         }
 
         with open(filepath, "wb") as f:
@@ -412,11 +430,35 @@ class ACFDetector:
         self.trained = model_data["trained"]
         self.mean = model_data["mean"]
         self.std = model_data["std"]
+        self.model_type = model_data.get("model_type", "mlp")
 
         input_size = 10 * self.feature_resolution * self.feature_resolution
-        self.classifier = MLPClassifier(
-            input_size=input_size, hidden_sizes=self.hidden_sizes, num_classes=2
-        ).to(DEVICE)
+
+        if self.model_type == "mlp":
+            self.classifier = MLPClassifier(
+                input_size=input_size, hidden_sizes=self.hidden_sizes, num_classes=2
+            ).to(DEVICE)
+        elif self.model_type == "cnn":
+            self.classifier = CNNClassifier(
+                input_size,
+                self.hidden_sizes,
+                num_classes=2,
+                feature_resolution=self.feature_resolution,
+            ).to(DEVICE)
+        elif self.model_type == "gbm":
+            self.classifier = LightGBM(
+                n_estimators=100,
+                learning_rate=1.0,
+                max_depth=1,
+                random_state=42,
+                n_jobs=-1,
+                verbose=1,
+            )
+        elif self.model_type == "ada":
+            self.classifier = AdaBoost(
+                n_estimators=100, learning_rate=1.0, max_depth=1, random_state=42
+            )
+
         self.classifier.load_state(model_data["model_state"])
         self.classifier.eval()
 
