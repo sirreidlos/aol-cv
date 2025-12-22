@@ -1,9 +1,11 @@
 # ACF impl
 
-0. Clone repository
+0. Clone repository and install dependencies 
 ```bash
 git clone git@github.com:sirreidlos/aol-cv.git
 cd aol-cv
+# I recommend making a venv beforehand
+pip install -r requirements.txt # or uv sync
 ```
 
 1. Download the WIDER FACE dataset
@@ -50,4 +52,14 @@ python inference.py --model models/acf_detector.pkl --image data/WIDER_test/imag
 Example:
 ```bash
 python evaluate.py --model models/acf_detector.pkl --annotation_file data/wider_face_split/wider_face_val_bbx_gt.txt --image_dir data/WIDER_val/images/ --max_images 100
+```
+
+5. Run evaluation to compute PR curve and AP
+```bash
+python evaluate_pr_curve.py --model ./models/acf_detector.pkl --annotation_file ./data/wider_face_split/wider_face_val_bbx_gt.txt --image_dir ./data/WIDER_val/images/
+```
+
+6. Run the web app
+```bash
+streamlit run app/app.py
 ```
