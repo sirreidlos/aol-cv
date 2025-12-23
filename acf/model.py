@@ -2,14 +2,14 @@ from pathlib import Path
 import pickle
 
 from sklearn.metrics import classification_report
-from acf.ada import AdaBoost
+from acf.ada import AdaBoost, AdaBoostCascade
 from acf.cnn import CNNClassifier
 import numpy as np
 from tqdm import tqdm
 import os
-from typing import Literal, Tuple, List
+from typing import Dict, Literal, Tuple, List
 
-from acf.gbm import LightGBM
+from acf.gbm import SoftCascadeLightGBM
 from acf.mlp import MLPClassifier
 from acf.abstract_model import Model
 from .channels import compute_channels
@@ -18,6 +18,7 @@ from .preprocessing import (
     compute_iou_batch,
     extract_training_samples_sliding,
     generate_sliding_windows,
+    parse_muct_annotation,
     parse_wider_face_annotation,
     load_image,
     resize_sample,
@@ -81,17 +82,32 @@ class ACFDetector:
                 feature_resolution=feature_resolution,
             )
         elif model == "gbm":
-            self.classifier = LightGBM(
-                n_estimators=100,
+            self.classifier = SoftCascadeLightGBM(
+                n_stages=3,
+                focus_on_hard_examples=True,
+                hard_example_mining="error_uncertainty",
+                learning_rate=0.1,
+                random_state=42,
+            )
+
+            # self.classifier = LightGBM(
+            #     n_estimators=100,
+            #     learning_rate=1.0,
+            #     max_depth=1,
+            #     random_state=42,
+            #     n_jobs=-1,
+            #     verbose=1,
+            # )
+        elif model == "ada":
+            # self.classifier = AdaBoost(
+            #     n_estimators=100, learning_rate=1.0, max_depth=1, random_state=42
+            # )
+            self.classifier = AdaBoostCascade(
+                n_estimators=50,
                 learning_rate=1.0,
                 max_depth=1,
-                random_state=42,
-                n_jobs=-1,
-                verbose=1,
-            )
-        elif model == "ada":
-            self.classifier = AdaBoost(
-                n_estimators=100, learning_rate=1.0, max_depth=1, random_state=42
+                cascade_thresholds=[0.3, 0.2],
+                cascade_stages=[10, 25],
             )
 
         self.model_type = model
@@ -203,6 +219,7 @@ class ACFDetector:
 
     def get_train_data(
         self,
+        dataset_type: str,
         annotation_setting: AnnotationSetting,
         annotation_file: str = "data/wider_face_split/wider_face_train_bbx_gt.txt",
         image_base_dir: str = "data/WIDER_train/images/",
@@ -216,7 +233,12 @@ class ACFDetector:
         """
 
         print("Loading annotations...")
-        annotations = parse_wider_face_annotation(annotation_file, annotation_setting)
+        if dataset_type == "widerface":
+            annotations = parse_wider_face_annotation(
+                annotation_file, annotation_setting
+            )
+        elif dataset_type == "muct":
+            annotations = parse_muct_annotation(annotation_file)
 
         image_paths = list(annotations.keys())
         if max_images:
@@ -232,9 +254,13 @@ class ACFDetector:
                 acceptable_pose=None,
                 filter_invalid=True,
             )
-            val_annotations = parse_wider_face_annotation(
-                val_annotation_file, val_annotation_setting
-            )  # have val set use all the images
+            if dataset_type == "widerface":
+                val_annotations = parse_wider_face_annotation(
+                    val_annotation_file, val_annotation_setting
+                )
+            elif dataset_type == "muct":
+                val_annotations = parse_muct_annotation(val_annotation_file)
+
             val_image_paths = list(val_annotations.keys())
             if max_val_images:
                 val_image_paths = val_image_paths[:max_val_images]
@@ -446,13 +472,20 @@ class ACFDetector:
                 feature_resolution=self.feature_resolution,
             ).to(DEVICE)
         elif self.model_type == "gbm":
-            self.classifier = LightGBM(
-                n_estimators=100,
-                learning_rate=1.0,
-                max_depth=1,
+            # self.classifier = LightGBM(
+            #     n_estimators=100,
+            #     learning_rate=1.0,
+            #     max_depth=1,
+            #     random_state=42,
+            #     n_jobs=-1,
+            #     verbose=1,
+            # )
+            self.classifier = SoftCascadeLightGBM(
+                n_stages=3,
+                focus_on_hard_examples=True,
+                hard_example_mining="error_uncertainty",
+                learning_rate=0.1,
                 random_state=42,
-                n_jobs=-1,
-                verbose=1,
             )
         elif self.model_type == "ada":
             self.classifier = AdaBoost(
@@ -820,8 +853,15 @@ class MemoryEfficientBootstrapWithHeap:
 
     detector: ACFDetector
 
-    def __init__(self, detector: ACFDetector):
+    def __init__(
+        self,
+        detector: ACFDetector,
+        dataset: Literal["widerface", "muct"],
+        annotations: Dict[str, np.ndarray],
+    ):
         self.detector = detector
+        self.dataset = dataset
+        self.annotations = annotations
 
     def get_neg_current(
         self,
@@ -834,7 +874,6 @@ class MemoryEfficientBootstrapWithHeap:
         mining_image_base_dir,
         hard_neg_miner,
         num_mining_images,
-        annotation_setting: AnnotationSetting,
     ) -> Tuple[np.ndarray, np.ndarray]:
         if round_idx == 0:
             n_neg = min(len(X_neg_initial), len(X_pos) * 3)
@@ -861,7 +900,6 @@ class MemoryEfficientBootstrapWithHeap:
             hard_neg_miner,
             mining_annotation_file,
             mining_image_base_dir,
-            annotation_setting=annotation_setting,
             num_images=num_mining_images,
             max_hard_negs_per_image=50,
             score_threshold=score_threshold,
@@ -931,7 +969,6 @@ class MemoryEfficientBootstrapWithHeap:
         y_train: np.ndarray,
         X_val: np.ndarray,
         y_val: np.ndarray,
-        annotation_setting: AnnotationSetting,
         bootstrap_rounds=3,
         early_stopping_patience=5,
         mining_annotation_file: str | None = None,
@@ -1021,7 +1058,6 @@ class MemoryEfficientBootstrapWithHeap:
                 mining_image_base_dir=mining_image_base_dir,
                 hard_neg_miner=hard_neg_miner,
                 num_mining_images=num_mining_images,
-                annotation_setting=annotation_setting,
             )
 
             X_current = np.vstack([X_pos, X_neg_current])
@@ -1182,7 +1218,6 @@ class MemoryEfficientBootstrapWithHeap:
         heap_miner: HeapBasedHardNegativeMiner,
         annotation_file: str,
         image_base_dir: str,
-        annotation_setting: AnnotationSetting,
         num_images: int = 100,
         max_hard_negs_per_image: int = 50,
         score_threshold: float = 0.0,
@@ -1192,10 +1227,7 @@ class MemoryEfficientBootstrapWithHeap:
         print(f"Score threshold: {score_threshold:.4f}")
         print(f"{'=' * 60}")
 
-        annotation_setting = AnnotationSetting(
-            None, None, None, None, None, True
-        )  # Force it to include all images
-        annotations = parse_wider_face_annotation(annotation_file, annotation_setting)
+        annotations = self.annotations
         image_paths = list(annotations.keys())
 
         mining_images = np.random.choice(

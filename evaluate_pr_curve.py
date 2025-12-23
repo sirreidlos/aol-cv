@@ -14,6 +14,8 @@ from acf.preprocessing import (
     compute_iou_batch,
 )
 
+import os
+
 
 def evaluate_image_pr(
     detections: List[Tuple[int, int, int, int, float]],
@@ -90,7 +92,7 @@ def compute_ap(recalls: List[float], precisions: List[float]) -> float:
         return 0.0
 
     recalls = [0.0] + recalls + [1.0]
-    precisions = [0.0] + precisions + [0.0]
+    precisions = [1.0] + precisions + [0.0]
 
     precisions = interpolate_precision(precisions)
 
@@ -175,6 +177,7 @@ def main():
 
     ap_results = {}
 
+    model_name = os.path.splitext(os.path.basename(args.model))[0]
     for iou_t in args.iou_thresholds:
         recalls, precisions = compute_pr_curve(
             all_records_per_iou[iou_t],
@@ -185,7 +188,7 @@ def main():
 
         print(f"AP@{iou_t:.2f}: {ap:.4f}")
 
-        output = f"{iou_t}_{args.output}"
+        output = f"{model_name}_{iou_t}_{args.output}"
 
         plt.figure(figsize=(6, 5))
         plt.plot(recalls, precisions)

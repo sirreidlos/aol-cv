@@ -2,17 +2,427 @@ from dataclasses import dataclass
 import os
 import numpy as np
 import cv2
-from typing import Dict, Optional, Tuple, List
+from typing import Dict, Literal, Optional, Tuple, List
+import pickle
+from tqdm.auto import tqdm
+
+from acf.channels import compute_channels
 
 
 @dataclass
 class AnnotationSetting:
-    acceptable_blur: Optional[List[int]]
-    acceptable_expression: Optional[List[int]]
-    acceptable_illumination: Optional[List[int]]
-    acceptable_occlusion: Optional[List[int]]
-    acceptable_pose: Optional[List[int]]
     filter_invalid: bool
+    acceptable_blur: Optional[List[int]] = None
+    acceptable_expression: Optional[List[int]] = None
+    acceptable_illumination: Optional[List[int]] = None
+    acceptable_occlusion: Optional[List[int]] = None
+    acceptable_pose: Optional[List[int]] = None
+
+
+def create_cache_key(
+    dataset_type: Literal["widerface", "muct"],
+    num_train_images: int,
+    num_val_images: int,
+    feature_resolution: int,
+    window_size: Tuple[int, int],
+    pos_iou_thresh: float,
+    neg_iou_thresh: float,
+    hard_neg_iou_range: Tuple[float, float],
+    num_neg_per_pos: int,
+) -> str:
+    return (
+        f"{dataset_type}_"
+        f"train_{num_train_images}_val_{num_val_images}_"
+        f"res_{feature_resolution}_win_{window_size[0]}x{window_size[1]}_"
+        f"pos{pos_iou_thresh}_neg{neg_iou_thresh}_"
+        f"hard{hard_neg_iou_range[0]}-{hard_neg_iou_range[1]}_"
+        f"ratio{num_neg_per_pos}"
+    )
+
+
+def save_cache(
+    cache_key: str,
+    X_train,
+    y_train,
+    X_val=None,
+    y_val=None,
+    cache_dir: str = "cache",
+) -> None:
+    os.makedirs(cache_dir, exist_ok=True)
+    cache_file = os.path.join(cache_dir, f"{cache_key}.pkl")
+
+    with open(cache_file, "wb") as f:
+        pickle.dump(
+            {
+                "X_train": X_train,
+                "y_train": y_train,
+                "X_val": X_val,
+                "y_val": y_val,
+            },
+            f,
+        )
+
+    print(f"Cached preprocessed features to {cache_file}")
+
+
+def load_cache(
+    cache_key: str,
+    cache_dir: str = "cache",
+):
+    cache_file = os.path.join(cache_dir, f"{cache_key}.pkl")
+
+    if not os.path.exists(cache_file):
+        return None
+
+    print(f"Loading cached features from {cache_file}...")
+    with open(cache_file, "rb") as f:
+        return pickle.load(f)
+
+
+def get_widerface_training_data(
+    annotation_file: str,
+    val_annotation_file: str,
+    image_dir: str,
+    val_image_dir: str,
+    annotation_setting: AnnotationSetting,
+    feature_resolution: int,
+    hard_neg_iou_range: Tuple[float, float],
+    max_images: Optional[int],
+    max_val_images: Optional[int],
+    neg_iou_thresh: float,
+    num_neg_per_pos: int,
+    pos_iou_thresh: float,
+    window_size: Tuple[int, int],
+):
+    annotations = parse_wider_face_annotation(annotation_file, AnnotationSetting(True))
+    image_paths = list(annotations.keys())
+    if max_images:
+        image_paths = image_paths[:max_images]
+
+    val_annotations = parse_wider_face_annotation(
+        val_annotation_file, annotation_setting
+    )
+    val_image_paths = list(val_annotations.keys())
+    if max_val_images:
+        val_image_paths = val_image_paths[:max_val_images]
+
+    cache_key = create_cache_key(
+        "widerface",
+        len(image_paths),
+        len(val_image_paths),
+        feature_resolution,
+        window_size,
+        pos_iou_thresh,
+        neg_iou_thresh,
+        hard_neg_iou_range,
+        num_neg_per_pos,
+    )
+
+    cached_data = load_cache(cache_key)
+    if cached_data is not None:
+        X_train = cached_data["X_train"]
+        y_train = cached_data["y_train"]
+        X_val = cached_data["X_val"]
+        y_val = cached_data["y_val"]
+        return X_train, y_train, X_val, y_val
+
+    X_train, y_train = extract_dataset_samples(
+        image_paths=image_paths,
+        annotations=annotations,
+        image_base_dir=image_dir,
+        feature_resolution=feature_resolution,
+        window_size=window_size,
+        pos_iou_thresh=pos_iou_thresh,
+        neg_iou_thresh=neg_iou_thresh,
+        hard_neg_iou_range=hard_neg_iou_range,
+        num_neg_per_pos=num_neg_per_pos,
+        max_pos_multiplier=num_neg_per_pos,
+        desc="Processing images",
+    )
+
+    X_val, y_val = extract_dataset_samples(
+        image_paths=image_paths,
+        annotations=val_annotations,
+        image_base_dir=val_image_dir,
+        feature_resolution=feature_resolution,
+        window_size=window_size,
+        pos_iou_thresh=pos_iou_thresh,
+        neg_iou_thresh=neg_iou_thresh,
+        hard_neg_iou_range=hard_neg_iou_range,
+        num_neg_per_pos=num_neg_per_pos,
+        max_pos_multiplier=num_neg_per_pos,
+        desc="Processing images",
+    )
+
+    assert isinstance(X_val, np.ndarray)
+    assert isinstance(y_val, np.ndarray)
+    save_cache(cache_key, X_train, y_train, X_val, y_val)
+
+    return X_train, y_train, X_val, y_val
+
+
+def get_muct_annotations(
+    annotation_file: str,
+    image_dir: str,
+    val_split: float = 0.2,
+) -> Tuple[Dict[str, np.ndarray], Dict[str, np.ndarray]]:
+    annotations = parse_muct_annotation(annotation_file)
+    valid_annotations = {}
+
+    for img_path, annots in annotations.items():
+        full_path = f"{image_dir}/{img_path}"
+        img = cv2.imread(full_path)
+        if img is not None:
+            valid_annotations[img_path] = annots
+
+    image_paths = sorted(valid_annotations.keys())
+    n_val = int(len(image_paths) * val_split)
+
+    train_image_paths = image_paths[n_val:]
+    train_annotations = {img: valid_annotations[img] for img in train_image_paths}
+    val_image_paths = image_paths[:n_val]
+    val_annotations = {img: valid_annotations[img] for img in val_image_paths}
+
+    return train_annotations, val_annotations
+
+
+def get_muct_training_data(
+    annotation_file: str,
+    image_dir: str,
+    feature_resolution: int,
+    hard_neg_iou_range: Tuple[float, float],
+    max_images: Optional[int],
+    neg_iou_thresh: float,
+    num_neg_per_pos: int,
+    pos_iou_thresh: float,
+    window_size: Tuple[int, int],
+    val_split: float = 0.2,
+):
+    train_annotations, val_annotations = get_muct_annotations(
+        annotation_file, image_dir, val_split=val_split
+    )
+
+    train_image_paths = list(train_annotations.keys())
+    if max_images:
+        train_image_paths = train_image_paths[:max_images]
+
+    val_image_paths = list(val_annotations.keys())
+
+    cache_key = create_cache_key(
+        "muct",
+        len(train_image_paths),
+        len(val_image_paths),
+        feature_resolution,
+        window_size,
+        pos_iou_thresh,
+        neg_iou_thresh,
+        hard_neg_iou_range,
+        num_neg_per_pos,
+    )
+
+    cached_data = load_cache(cache_key)
+    if cached_data is not None:
+        X_train = cached_data["X_train"]
+        y_train = cached_data["y_train"]
+        X_val = cached_data["X_val"]
+        y_val = cached_data["y_val"]
+        return X_train, y_train, X_val, y_val
+
+    X_train, y_train = extract_dataset_samples(
+        image_paths=train_image_paths,
+        annotations=train_annotations,
+        image_base_dir=image_dir,
+        feature_resolution=feature_resolution,
+        window_size=window_size,
+        pos_iou_thresh=pos_iou_thresh,
+        neg_iou_thresh=neg_iou_thresh,
+        hard_neg_iou_range=hard_neg_iou_range,
+        num_neg_per_pos=num_neg_per_pos,
+        max_pos_multiplier=num_neg_per_pos,
+        desc="Processing train images",
+    )
+
+    X_val, y_val = extract_dataset_samples(
+        image_paths=val_image_paths,
+        annotations=val_annotations,
+        image_base_dir=image_dir,
+        feature_resolution=feature_resolution,
+        window_size=window_size,
+        pos_iou_thresh=pos_iou_thresh,
+        neg_iou_thresh=neg_iou_thresh,
+        hard_neg_iou_range=hard_neg_iou_range,
+        num_neg_per_pos=num_neg_per_pos,
+        max_pos_multiplier=num_neg_per_pos,
+        desc="Processing val images",
+    )
+
+    assert isinstance(X_val, np.ndarray)
+    assert isinstance(y_val, np.ndarray)
+
+    save_cache(cache_key, X_train, y_train, X_val, y_val)
+    return X_train, y_train, X_val, y_val
+
+
+def extract_dataset_samples(
+    image_paths,
+    annotations,
+    image_base_dir: str,
+    feature_resolution,
+    window_size: Tuple[int, int],
+    pos_iou_thresh: float,
+    neg_iou_thresh: float,
+    hard_neg_iou_range: Tuple[float, float],
+    num_neg_per_pos: int,
+    max_pos_multiplier: int | None = None,
+    desc: str = "Processing images",
+):
+    def extract_features(
+        image: np.ndarray, roi: Tuple[int, int, int, int]
+    ) -> np.ndarray:
+        resized = resize_sample(image, roi, window_size)
+        channels = compute_channels(resized)
+        smoothed = cv2.GaussianBlur(channels, (3, 3), sigmaX=1)
+
+        aggregated = cv2.resize(
+            smoothed,
+            (feature_resolution, feature_resolution),
+            interpolation=cv2.INTER_AREA,
+        )
+
+        return aggregated.flatten()
+
+    X_all, y_all = [], []
+
+    for img_path in tqdm(image_paths, desc=desc, ncols=100):
+        try:
+            image = load_image(img_path, image_base_dir)
+            gt_boxes = annotations[img_path]
+
+            X, y = extract_samples_from_image(
+                image=image,
+                gt_boxes=gt_boxes,
+                extract_features_fn=extract_features,
+                window_size=window_size,
+                pos_iou_thresh=pos_iou_thresh,
+                neg_iou_thresh=neg_iou_thresh,
+                hard_neg_iou_range=hard_neg_iou_range,
+                num_neg_per_pos=num_neg_per_pos,
+                max_pos_multiplier=max_pos_multiplier,
+            )
+
+            X_all.extend(X)
+            y_all.extend(y)
+
+        except Exception as e:
+            print(f"Error processing {img_path}: {e}")
+            continue
+
+    return (
+        np.asarray(X_all, dtype=np.float32),
+        np.asarray(y_all, dtype=np.int64),
+    )
+
+
+def extract_samples_from_image(
+    image: np.ndarray,
+    gt_boxes: np.ndarray,
+    extract_features_fn,
+    window_size: Tuple[int, int],
+    pos_iou_thresh: float,
+    neg_iou_thresh: float,
+    hard_neg_iou_range: Tuple[float, float],
+    num_neg_per_pos: int,
+    scale: float = 1.0,
+    max_pos_multiplier: int | None = None,
+):
+    h, w = image.shape[:2]
+    win_w, win_h = window_size
+
+    if h < win_h or w < win_w:
+        return [], []
+
+    pos_samples, neg_samples = extract_training_samples_sliding(
+        image,
+        gt_boxes,
+        pos_iou_thresh=pos_iou_thresh,
+        neg_iou_thresh=neg_iou_thresh,
+        hard_neg_iou_range=hard_neg_iou_range,
+        num_neg_per_pos=num_neg_per_pos,
+        window_size=window_size,
+        scale=scale,
+    )
+
+    X, y = [], []
+
+    pos_count = 0
+    neg_count = 0
+    pos_limit = (
+        len(gt_boxes) * max_pos_multiplier
+        if max_pos_multiplier is not None
+        else float("inf")
+    )
+
+    for box in pos_samples:
+        if pos_count >= pos_limit:
+            break
+        X.append(extract_features_fn(image, box))
+        y.append(1)
+        pos_count += 1
+
+    for box in neg_samples:
+        if neg_count >= pos_count * num_neg_per_pos:
+            break
+        X.append(extract_features_fn(image, box))
+        y.append(0)
+        neg_count += 1
+
+    return X, y
+
+
+def parse_muct_annotation(annotation_file: str) -> Dict[str, np.ndarray]:
+    annotations = {}
+
+    with open(annotation_file, "r") as f:
+        lines = f.readlines()
+
+    i = 1
+    while i < len(lines):
+        boxes = []
+        box_line = lines[i].strip().split(",")
+        i += 1
+
+        img_path = box_line[0] + ".jpg"
+
+        values = list(map(float, box_line[2:]))
+        assert len(values) == 152
+
+        x_vals = values[0::2]
+        y_vals = values[1::2]
+
+        filtered_coords = [(x, y) for x, y in zip(x_vals, y_vals) if x != 0 and y != 0]
+        if not filtered_coords:
+            continue
+
+        assert filtered_coords, "No valid landmarks"
+        x_filtered, y_filtered = zip(*filtered_coords)
+
+        xmin = min(x_filtered)
+        xmax = max(x_filtered)
+        ymin = min(y_filtered)
+        ymax = max(y_filtered)
+
+        x = int(xmin)
+        y = int(ymin)
+        w = int(xmax - xmin)
+        h = int(ymax - ymin)
+
+        if w > 0 and h > 0:
+            boxes.append([x, y, w, h])
+
+        if boxes:
+            annotations[img_path] = np.array(boxes)
+
+    return annotations
 
 
 def parse_wider_face_annotation(

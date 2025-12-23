@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Callable, Dict, List, Optional, Tuple
 import numpy as np
 import cv2
@@ -79,12 +80,14 @@ def compute_fast_feature_pyramid(
 def detect_multiscale_fast(
     detector: ACFDetector,
     image: np.ndarray,
+    window_size: Tuple[int, int],
     scales=None,
     stride=8,
     score_threshold=0.5,
     nms_threshold=0.3,
     batch_size=32,
     progress_cb: Optional[Callable[[int, int], None]] = None,
+    save_crops_dir: Optional[Path] = None,  # NEW
 ) -> List[Tuple[int, int, int, int, float]]:
     def normalize_features(detector, X: np.ndarray) -> np.ndarray:
         X = X.reshape(-1, detector.feature_resolution, detector.feature_resolution, 10)
@@ -100,34 +103,35 @@ def detect_multiscale_fast(
         scales = [0.5, 0.75, 1.0, 1.25, 1.5]
 
     channels = compute_channels(image)
-    pyramid = compute_fast_feature_pyramid(channels, scales, detector.window_size)
+    pyramid = compute_fast_feature_pyramid(channels, scales, window_size)
 
     detector.classifier.eval()
-
     all_boxes = []
     all_scores = []
-
     windows_per_scale = []
     total_windows = 0
 
     for scaled_channels, scale in pyramid:
         h, w = scaled_channels.shape[:2]
-        win_w, win_h = detector.window_size
-
+        win_w, win_h = window_size
         if h < win_h or w < win_w:
             windows_per_scale.append((scaled_channels, scale, []))
             continue
-
-        windows = generate_sliding_windows((h, w), detector.window_size, stride)
+        windows = generate_sliding_windows((h, w), window_size, stride)
         windows_per_scale.append((scaled_channels, scale, windows))
         total_windows += len(windows)
+
+    if save_crops_dir:
+        save_crops_dir.mkdir(parents=True, exist_ok=True)
 
     with tqdm(
         total=total_windows,
         desc="Detecting faces",
         unit="window",
         ncols=100,
+        leave=False,
     ) as pbar:
+        crop_idx = 0
         for scaled_channels, scale, windows in windows_per_scale:
             if not windows:
                 continue
@@ -149,20 +153,30 @@ def detect_multiscale_fast(
 
                     for idx, window in enumerate(batch_windows):
                         score = scores[idx]
+                        x, y, win_w, win_h = window
+                        orig_x = int(x / scale)
+                        orig_y = int(y / scale)
+                        orig_w = int(win_w / scale)
+                        orig_h = int(win_h / scale)
+
                         if score > score_threshold:
-                            x, y, win_w, win_h = window
-                            all_boxes.append(
-                                [
-                                    int(x / scale),
-                                    int(y / scale),
-                                    int(win_w / scale),
-                                    int(win_h / scale),
-                                ]
-                            )
+                            all_boxes.append([orig_x, orig_y, orig_w, orig_h])
                             all_scores.append(float(score))
 
+                        if save_crops_dir:
+                            crop = image[
+                                orig_y : orig_y + orig_h, orig_x : orig_x + orig_w
+                            ]
+                            crop_file = (
+                                save_crops_dir
+                                / f"crop_{crop_idx:06d}_score_{score:.3f}.jpg"
+                            )
+                            cv2.imwrite(
+                                str(crop_file), cv2.cvtColor(crop, cv2.COLOR_RGB2BGR)
+                            )
+                            crop_idx += 1
+
                 if progress_cb is not None:
-                    # callback for progress if needed
                     progress_cb(pbar.n, pbar.total)
                 pbar.update(len(batch_windows))
 
@@ -200,16 +214,26 @@ def get_scales_octave_based(n_per_oct=8, n_oct_up=0, min_ds=(16, 16), max_scale=
 def detect_multiscale(
     detector: ACFDetector,
     image: np.ndarray,
+    window_size: Tuple[int, int],
     scales=None,
     stride=8,
     score_threshold=0.5,
     nms_threshold=0.3,
     batch_size=32,
     use_fast_pyramid=True,
+    save_crops_dir: Optional[Path] = None,  # NEW
 ) -> List[Tuple[int, int, int, int, float]]:
     if use_fast_pyramid:
         return detect_multiscale_fast(
-            detector, image, scales, stride, score_threshold, nms_threshold, batch_size
+            detector,
+            image,
+            window_size,
+            scales,
+            stride,
+            score_threshold,
+            nms_threshold,
+            batch_size,
+            save_crops_dir=save_crops_dir,
         )
 
     if not detector.trained:
@@ -229,12 +253,12 @@ def detect_multiscale(
 
     for scaled_img, scale in pyramid:
         h, w = scaled_img.shape[:2]
-        win_w, win_h = detector.window_size
+        win_w, win_h = window_size
 
         if h < win_h or w < win_w:
             continue
 
-        windows = generate_sliding_windows((h, w), detector.window_size, stride)
+        windows = generate_sliding_windows((h, w), window_size, stride)
 
         for window in windows:
             all_windows_data.append((scaled_img, window, scale))
@@ -244,6 +268,7 @@ def detect_multiscale(
         desc="Detecting faces",
         unit="batch",
         ncols=100,
+        leave=False,
     ):
         batch_windows = all_windows_data[i : i + batch_size]
         batch_features = []
@@ -439,7 +464,7 @@ def evaluate_detections(
             "f1": 0,
             "true_positives": 0,
             "false_positives": 0,
-            "false_negatives": total_predictions,
+            "false_negatives": len(ground_truth),
             "total_predictions": total_predictions,
         }
 

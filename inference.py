@@ -84,6 +84,13 @@ def main():
         help="Minimum detection size [width height] for octave-based scaling",
     )
     parser.add_argument(
+        "--max_ds",
+        type=int,
+        nargs=2,
+        default=[256, 256],
+        help="Maximum detection size [width height] for octave-based scaling",
+    )
+    parser.add_argument(
         "--max_scale",
         type=float,
         default=None,
@@ -105,24 +112,26 @@ def main():
     scales = get_scales_octave_based(
         args.n_per_oct, args.n_oct_up, tuple(args.min_ds), args.max_scale
     )
+    print(scales)
+    vis_dir = None
+    if args.feature_vis_dir:
+        vis_dir = prepare_output_dir(args.feature_vis_dir)
+        print(f"Feature visualizations will be saved to {vis_dir}")
 
     detections = detect_multiscale(
         detector=detector,
         image=image,
+        window_size=args.max_ds,
         scales=scales,
         stride=args.stride,
         score_threshold=args.score_threshold,
         nms_threshold=args.nms_threshold,
         batch_size=args.batch_size,
         use_fast_pyramid=args.use_fast_pyramid,
+        save_crops_dir=vis_dir,
     )
 
     print(f"Detected {len(detections)} faces")
-
-    vis_dir = None
-    if args.feature_vis_dir:
-        vis_dir = prepare_output_dir(args.feature_vis_dir)
-        print(f"Feature visualizations will be saved to {vis_dir}")
 
     for i, det in enumerate(detections):
         x, y, w, h, score = det
@@ -134,10 +143,11 @@ def main():
         print(f"  Face {i + 1}: x={x}, y={y}, w={w}, h={h}, score={score:.3f}")
 
         if vis_dir:
-            vis_path = (
-                args.feature_vis_dir / f"detection_{i + 1:03d}_score_{score:.3f}.jpg"
+            vis_path = vis_dir / f"detection_{i + 1:03d}_score_{score:.3f}.jpg"
+
+            figure = visualize_feature_map(
+                feature_map, i + 1, score, image[y : y + h, x : x + w]
             )
-            figure = visualize_feature_map(feature_map, i + 1, score)
             cv2.imwrite(str(vis_path), figure)
             print(f"    → Visualization saved to {vis_path}")
 
