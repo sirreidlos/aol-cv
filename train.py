@@ -54,7 +54,7 @@ class Args:
     filter_invalid: bool
     checkpoint: Optional[str]
 
-    model: Literal["mlp", "cnn", "ada", "gbm"]
+    model: Literal["mlp", "cnn", "ada", "ada-sc", "gbm", "gbm-sc"]
     dataset: Literal["widerface", "muct"]
 
 
