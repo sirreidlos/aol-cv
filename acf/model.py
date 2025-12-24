@@ -9,7 +9,7 @@ from tqdm import tqdm
 import os
 from typing import Dict, Literal, Tuple, List
 
-from acf.gbm import SoftCascadeLightGBM
+from acf.gbm import LightGBM, SoftCascadeLightGBM
 from acf.mlp import MLPClassifier
 from acf.abstract_model import Model
 from .channels import compute_channels
@@ -54,7 +54,7 @@ class ACFDetector:
         neg_iou_thresh=0.3,
         hard_neg_iou_range=(0.1, 0.3),
         num_neg_per_pos=3,
-        model: Literal["mlp", "cnn", "gbm", "ada"] = "mlp",
+        model: Literal["mlp", "cnn", "gbm", "gbm-sc", "ada", "ada-sc"] = "mlp",
     ):
         self.window_size = window_size
         self.hidden_sizes = hidden_sizes
@@ -82,6 +82,15 @@ class ACFDetector:
                 feature_resolution=feature_resolution,
             )
         elif model == "gbm":
+            self.classifier = LightGBM(
+                n_estimators=100,
+                learning_rate=1.0,
+                max_depth=1,
+                random_state=42,
+                n_jobs=-1,
+                verbose=1,
+            )
+        elif model == "gbm-sc":
             self.classifier = SoftCascadeLightGBM(
                 n_stages=3,
                 focus_on_hard_examples=True,
@@ -90,20 +99,13 @@ class ACFDetector:
                 random_state=42,
             )
 
-            # self.classifier = LightGBM(
-            #     n_estimators=100,
-            #     learning_rate=1.0,
-            #     max_depth=1,
-            #     random_state=42,
-            #     n_jobs=-1,
-            #     verbose=1,
-            # )
         elif model == "ada":
-            # self.classifier = AdaBoost(
-            #     n_estimators=100, learning_rate=1.0, max_depth=1, random_state=42
-            # )
+            self.classifier = AdaBoost(
+                n_estimators=100, learning_rate=1.0, max_depth=1, random_state=42
+            )
+        elif model == "ada-sc":
             self.classifier = AdaBoostCascade(
-                n_estimators=50,
+                n_estimators=100,
                 learning_rate=1.0,
                 max_depth=1,
                 cascade_thresholds=[0.3, 0.2],
@@ -472,14 +474,15 @@ class ACFDetector:
                 feature_resolution=self.feature_resolution,
             ).to(DEVICE)
         elif self.model_type == "gbm":
-            # self.classifier = LightGBM(
-            #     n_estimators=100,
-            #     learning_rate=1.0,
-            #     max_depth=1,
-            #     random_state=42,
-            #     n_jobs=-1,
-            #     verbose=1,
-            # )
+            self.classifier = LightGBM(
+                n_estimators=100,
+                learning_rate=1.0,
+                max_depth=1,
+                random_state=42,
+                n_jobs=-1,
+                verbose=1,
+            )
+        elif self.model_type == "gbm-sc":
             self.classifier = SoftCascadeLightGBM(
                 n_stages=3,
                 focus_on_hard_examples=True,
@@ -490,6 +493,14 @@ class ACFDetector:
         elif self.model_type == "ada":
             self.classifier = AdaBoost(
                 n_estimators=100, learning_rate=1.0, max_depth=1, random_state=42
+            )
+        elif self.model_type == "ada-sc":
+            self.classifier = AdaBoostCascade(
+                n_estimators=100,
+                learning_rate=1.0,
+                max_depth=1,
+                cascade_thresholds=[0.3, 0.2],
+                cascade_stages=[10, 25],
             )
 
         self.classifier.load_state(model_data["model_state"])
