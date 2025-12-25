@@ -29,6 +29,7 @@ class Args:
     score_threshold: float
     nms_threshold: float
     iou_threshold: float
+    batch_size: int
 
     n_per_oct: int
     n_oct_up: int
@@ -62,6 +63,7 @@ def parse_args() -> Args:
     parser.add_argument("--score_threshold", type=float, default=0.5)
     parser.add_argument("--nms_threshold", type=float, default=0.3)
     parser.add_argument("--iou_threshold", type=float, default=0.5)
+    parser.add_argument("--batch_size", type=int, default=32)
 
     parser.add_argument("--n_per_oct", type=int, default=8)
     parser.add_argument("--n_oct_up", type=int, default=2)
@@ -115,6 +117,7 @@ def main():
                 stride=args.stride,
                 score_threshold=args.score_threshold,
                 nms_threshold=args.nms_threshold,
+                batch_size=args.batch_size,
             )
             gt_boxes = annotations[img_path]
             metrics = evaluate_detections(detections, gt_boxes, args.iou_threshold)

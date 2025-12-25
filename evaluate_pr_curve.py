@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 import argparse
-from typing import List, Tuple
+from dataclasses import dataclass
+from typing import List, Tuple, Optional, Literal
 from tqdm import tqdm
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 
 from acf.model import ACFDetector
 from acf.inference import detect_multiscale, get_scales_octave_based
@@ -12,9 +14,74 @@ from acf.preprocessing import (
     parse_wider_face_annotation,
     load_image,
     compute_iou_batch,
+    get_muct_annotations,
 )
 
-import os
+
+@dataclass
+class Args:
+    model: str
+    annotation_file: str
+    image_dir: str
+    dataset: Literal["widerface", "muct"]
+    max_images: Optional[int]
+
+    stride: int
+    nms_threshold: float
+    batch_size: int
+
+    iou_thresholds: List[float]
+
+    n_per_oct: int
+    n_oct_up: int
+    max_scale: Optional[float]
+    min_ds: Tuple[int, int]
+    max_ds: Tuple[int, int]
+
+    output: str
+
+
+def parse_args() -> Args:
+    parser = argparse.ArgumentParser(
+        description="PR-curve evaluation for ACF face detector"
+    )
+
+    parser.add_argument("--model", type=str, required=True)
+    parser.add_argument("--annotation_file", type=str, required=True)
+    parser.add_argument("--image_dir", type=str, required=True)
+
+    parser.add_argument(
+        "--dataset",
+        type=str,
+        default="widerface",
+        choices=["widerface", "muct"],
+    )
+    parser.add_argument("--max_images", type=int, default=None)
+
+    parser.add_argument("--stride", type=int, default=8)
+    parser.add_argument("--nms_threshold", type=float, default=0.3)
+    parser.add_argument("--batch_size", type=int, default=32)
+
+    parser.add_argument(
+        "--iou_thresholds",
+        type=float,
+        nargs="+",
+        default=[0.5, 0.75, 0.9, 0.95, 0.99],
+    )
+
+    parser.add_argument("--n_per_oct", type=int, default=8)
+    parser.add_argument("--n_oct_up", type=int, default=2)
+    parser.add_argument("--max_scale", type=float, default=None)
+    parser.add_argument("--min_ds", type=int, nargs=2, default=[24, 24])
+    parser.add_argument("--max_ds", type=int, nargs=2, default=[256, 256])
+
+    parser.add_argument("--output", type=str, default="pr_curve.png")
+
+    args = parser.parse_args()
+    args.min_ds = tuple(args.min_ds)
+    args.max_ds = tuple(args.max_ds)
+
+    return Args(**vars(args))
 
 
 def evaluate_image_pr(
@@ -104,46 +171,27 @@ def compute_ap(recalls: List[float], precisions: List[float]) -> float:
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="PR-curve evaluation for ACF face detector"
-    )
-
-    parser.add_argument("--model", type=str, required=True)
-    parser.add_argument("--annotation_file", type=str, required=True)
-    parser.add_argument("--image_dir", type=str, required=True)
-
-    parser.add_argument("--stride", type=int, default=8)
-    parser.add_argument("--nms_threshold", type=float, default=0.3)
-
-    parser.add_argument(
-        "--iou_thresholds", type=float, nargs="+", default=[0.5, 0.75, 0.9, 0.95, 0.99]
-    )
-
-    parser.add_argument("--n_per_oct", type=int, default=8)
-    parser.add_argument("--n_oct_up", type=int, default=2)
-    parser.add_argument("--min_ds", type=int, nargs=2, default=[24, 24])
-    parser.add_argument("--max_scale", type=float, default=None)
-
-    parser.add_argument("--output", type=str, default="pr_curve.png")
-    parser.add_argument("--max_images", type=int, default=None)
-    parser.add_argument("--batch_size", type=int, default=32)
-
-    args = parser.parse_args()
+    args = parse_args()
 
     detector = ACFDetector()
     detector.load(args.model)
 
-    annotations = parse_wider_face_annotation(
-        args.annotation_file,
-        AnnotationSetting(None, None, None, None, None, True),
-    )
-
     scales = get_scales_octave_based(
         args.n_per_oct,
         args.n_oct_up,
-        tuple(args.min_ds),
         args.max_scale,
     )
+
+    if args.dataset == "widerface":
+        annotations = parse_wider_face_annotation(
+            args.annotation_file,
+            AnnotationSetting(True),
+        )
+    else:
+        _, annotations = get_muct_annotations(
+            args.annotation_file,
+            args.image_dir,
+        )
 
     all_records_per_iou = {t: [] for t in args.iou_thresholds}
     total_gt = 0
@@ -160,6 +208,7 @@ def main():
         detections = detect_multiscale(
             detector=detector,
             image=image,
+            window_size=args.max_ds,
             scales=scales,
             stride=args.stride,
             score_threshold=0.0,
@@ -175,16 +224,14 @@ def main():
             )
             all_records_per_iou[iou_t].extend(records)
 
-    ap_results = {}
-
     model_name = os.path.splitext(os.path.basename(args.model))[0]
+
     for iou_t in args.iou_thresholds:
         recalls, precisions = compute_pr_curve(
             all_records_per_iou[iou_t],
             total_gt,
         )
         ap = compute_ap(recalls, precisions)
-        ap_results[iou_t] = ap
 
         print(f"AP@{iou_t:.2f}: {ap:.4f}")
 
@@ -197,6 +244,7 @@ def main():
         plt.title(f"Precision–Recall Curve (AP={ap:.3f})")
         plt.grid(True)
         plt.savefig(output, dpi=300, bbox_inches="tight")
+        plt.close()
 
         print(f"PR curve saved to {output}")
 

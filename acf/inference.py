@@ -190,7 +190,7 @@ def detect_multiscale_fast(
     return []
 
 
-def get_scales_octave_based(n_per_oct=8, n_oct_up=0, min_ds=(16, 16), max_scale=None):
+def get_scales_octave_based(n_per_oct=8, n_oct_up=0, max_scale=None):
     scales = []
     scale_factor = 2 ** (-1.0 / n_per_oct)
 
@@ -202,10 +202,7 @@ def get_scales_octave_based(n_per_oct=8, n_oct_up=0, min_ds=(16, 16), max_scale=
             break
         current_scale *= scale_factor
 
-        if (
-            current_scale * min_ds[0] < min_ds[0]
-            or current_scale * min_ds[1] < min_ds[1]
-        ):
+        if current_scale < 1.0:
             break
 
     return scales
