@@ -474,14 +474,21 @@ class ACFDetector:
                 feature_resolution=self.feature_resolution,
             ).to(DEVICE)
         elif self.model_type == "gbm":
-            self.classifier = LightGBM(
-                n_estimators=100,
-                learning_rate=1.0,
-                max_depth=1,
+            self.classifier = SoftCascadeLightGBM(
+                n_stages=3,
+                focus_on_hard_examples=True,
+                hard_example_mining="error_uncertainty",
+                learning_rate=0.1,
                 random_state=42,
-                n_jobs=-1,
-                verbose=1,
             )
+            # self.classifier = LightGBM(
+            #     n_estimators=100,
+            #     learning_rate=1.0,
+            #     max_depth=1,
+            #     random_state=42,
+            #     n_jobs=-1,
+            #     verbose=1,
+            # )
         elif self.model_type == "gbm-sc":
             self.classifier = SoftCascadeLightGBM(
                 n_stages=3,

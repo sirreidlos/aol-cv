@@ -8,29 +8,27 @@ cd aol-cv
 pip install -r requirements.txt # or uv sync
 ```
 
-1. Download the WIDER FACE dataset
-[WIDER FACE](https://shuoyang1213.me/WIDERFACE/)
+1. Download the MUCT dataset
+[MUCT Face Database](http://www.milbo.org/muct/)
 
-Download all three images and the face annotation
+Download all the archived files and then unarchive them 
 
 ```bash
 mkdir data
-unzip WIDER_train.zip -d data
-unzip WIDER_val.zip -d data
-unzip WIDER_test.zip -d data
-unzip wider_face_split.zip -d data
+tar -xvf muct-a-jpg-v1.tar.gz -C data/
+tar -xvf muct-b-jpg-v1.tar.gz -C data/
+tar -xvf muct-c-jpg-v1.tar.gz -C data/
+tar -xvf muct-d-jpg-v1.tar.gz -C data/
+tar -xvf muct-e-jpg-v1.tar.gz -C data/
+tar -xvf muct-landmarks-v1.tar.gz -C data/
 ```
 
 Ensure that the folder structure looks like this:
 ```
-    ┌── images            
-  ┌─┴ WIDER_val           
-  │ ┌── images            
-  ├─┴ WIDER_train         
-  │ ┌── images            
-  ├─┴ WIDER_test          
-  │ ┌── wider_face_train_bbx_gt.txt            
-  ├─┴ wider_face_split
+    ┌── muct76-opencv.csv     
+  ┌─┴ muct-landmarks
+  │ ┌── *.jpg
+  ├─┴ jpg
 ┌─┴ data                  
 ```
 
@@ -38,25 +36,27 @@ Ensure that the folder structure looks like this:
 
 Example:
 ```bash
-python train.py --annotation_file data/wider_face_split/wider_face_train_bbx_gt.txt --image_dir data/WIDER_train/images/ --val_annotation_file data/wider_face_split/wider_face_val_bbx_gt.txt --val_image_dir data/WIDER_val/images/ --hidden_sizes 512 256 128 64
+python train.py --dataset muct --annotation_file data/muct-landmarks/muct76-opencv.csv --image_dir data/jpg/ --output_model models/muct_mlp.pkl --selection_metric f1
+python train.py --dataset muct --annotation_file data/muct-landmarks/muct76-opencv.csv --image_dir data/jpg/ --output_model models/muct_ada.pkl --selection_metric f1 --model ada
+python train.py --dataset muct --annotation_file data/muct-landmarks/muct76-opencv.csv --image_dir data/jpg/ --output_model models/muct_gbm.pkl --selection_metric f1 --model gbm
 ```
 
 3. Run inference
 
 Example:
 ```bash
-python inference.py --model models/acf_detector.pkl --image data/WIDER_test/images/0--Parade/0_Parade_marchingband_1_9.jpg --output out.jpg --score_threshold 0.9
+python inference.py --model ./models/muct_mlp.pkl --image data/jpg/i000re-fn.jpg --output ./output1.png --n_per_oct 8 --n_oct_up 1 --min_ds 256 256 --stride 16
 ```
 
 4. Run evaluation
 Example:
 ```bash
-python evaluate.py --model models/acf_detector.pkl --annotation_file data/wider_face_split/wider_face_val_bbx_gt.txt --image_dir data/WIDER_val/images/ --max_images 100
+python evaluate.py --dataset muct --annotation_file ./data/muct-landmarks/muct76-opencv.csv --image_dir ./data/jpg/ --n_per_oct 8 --n_oct_up 1 --max_ds 256 256 --stride 16 --batch_size 4096 --model ./models/muct_mlp.pkl
 ```
 
 5. Run evaluation to compute PR curve and AP
 ```bash
-python evaluate_pr_curve.py --model ./models/acf_detector.pkl --annotation_file ./data/wider_face_split/wider_face_val_bbx_gt.txt --image_dir ./data/WIDER_val/images/
+python evaluate_pr_curve.py --dataset muct --model ./models/muct_ada.pkl --annotation_file ./data/muct-landmarks/muct76-opencv.csv --image_dir ./data/jpg/ --batch_size 2048 --n_per_oct 8 --n_oct_up 1 --max_ds 256 256 --stride 16
 ```
 
 6. Run the web app

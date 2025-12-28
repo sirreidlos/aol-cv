@@ -19,9 +19,9 @@ MODELS_DIR = BASE_DIR / "models"
 
 
 acf_model_map = {
-    "ACF (allset)": MODELS_DIR / "allset.pkl",
-    "ACF (cleanset)": MODELS_DIR / "cleanset.pkl",
-    "ACF (cleanset_smaller)": MODELS_DIR / "cleanset_smaller.pkl",
+    "ACF+MLP": MODELS_DIR / "muct_mlp.pkl",
+    "ACF+LightGBM": MODELS_DIR / "muct_gbm_sc.pkl",
+    "ACF+AdaBoost": MODELS_DIR / "muct_ada.pkl",
 }
 
 
@@ -42,9 +42,9 @@ def run_the_app():
     model_choice = st.sidebar.selectbox(
         "Select detector",
         [
-            "ACF (allset)",
-            "ACF (cleanset)",
-            "ACF (cleanset_smaller)",
+            "ACF+MLP",
+            "ACF+LightGBM",
+            "ACF+AdaBoost",
             "Viola-Jones",
         ],
     )
@@ -73,7 +73,7 @@ def run_the_app():
         "Stride", min_value=1, max_value=64, value=8, step=1
     )
     batch_size = st.sidebar.number_input(
-        "Batch size", min_value=1, max_value=512, value=32, step=1
+        "Batch size", min_value=1, max_value=16384, value=32, step=1
     )
 
     st.sidebar.header("Scale parameters")
@@ -205,11 +205,13 @@ def run_inference_mlp(
         progress.progress(frac)
         status.text(f"Scanning windows: {done}/{total}")
 
-    scales = get_scales_octave_based(num_scales, num_octaves, min_ds)
+    scales = get_scales_octave_based(num_scales, num_octaves, None)
+    max_ds = (int(min_ds[0] * scales[-1]), int(min_ds[1] * scales[-1]))
 
     detections = detect_multiscale_fast(
         detector=detector,
         image=image,
+        window_size=max_ds,
         scales=scales,
         stride=stride,
         score_threshold=0.0,

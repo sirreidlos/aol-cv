@@ -109,9 +109,7 @@ def main():
     print("Running detection...")
     print(f"Using {'fast' if args.use_fast_pyramid else 'original'} feature pyramid")
 
-    scales = get_scales_octave_based(
-        args.n_per_oct, args.n_oct_up, tuple(args.min_ds), args.max_scale
-    )
+    scales = get_scales_octave_based(args.n_per_oct, args.n_oct_up, args.max_scale)
     print(scales)
     vis_dir = None
     if args.feature_vis_dir:

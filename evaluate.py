@@ -84,9 +84,7 @@ def main():
     detector.load(args.model)
 
     print("Preparing scales for multiscale detection...")
-    scales = get_scales_octave_based(
-        args.n_per_oct, args.n_oct_up, args.min_ds, args.max_scale
-    )
+    scales = get_scales_octave_based(args.n_per_oct, args.n_oct_up, args.max_scale)
 
     if args.dataset == "widerface":
         print(f"Loading WIDER FACE annotations from {args.annotation_file}...")
