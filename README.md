@@ -1,4 +1,10 @@
-# ACF impl
+# Investigation of Face Detection Using Aggregate Channel Features
+
+This repository contains code to train models for face detection using the MUCT
+dataset. The models available to train are AdaBoost, LightGBM, and a simple
+multilayer perceptron.
+
+To setup an environment for reproducing the project, follow the steps below.
 
 0. Clone repository and install dependencies 
 ```bash
